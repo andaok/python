@@ -19,8 +19,8 @@ if [ "X$CMD" == "Xadd" ]; then
    echo "START ADD AND UPDATE DATA TO GITHUB IN $DATE"
    echo "-----------------------"
    git add $PROJECTDIR 
-   git commit -m $COMMIT $PROJECTDIR 
-   git remote add origin git@github.com:$GITHUBREPO
+   git commit -m "$COMMIT" $PROJECTDIR 
+   git push -u origin master
    echo "-----------------------"
 } >> /tmp/github.log 2>&1
 fi
@@ -29,7 +29,7 @@ if [ "X$CMD" == "Xupdate" ]; then
 {
    echo "START UPDATE DATA TO GITHUB IN $DATE"
    echo "-----------------------"
-   git commit -m $COMMIT $PROJECTDIR
+   git commit -m "$COMMIT" $PROJECTDIR
    git push -u origin master
    echo "-----------------------"
 } >> /tmp/github.log 2>&1
