@@ -17,10 +17,10 @@ opener = urllib2.build_opener(httpHandler,httpsHandler)
 urllib2.install_opener(opener)
 
 try:
-    response = urllib2.urlopen("http://192.168.0.111/video1.mp4")
+    response = urllib2.urlopen("http://192.168.0.111/video.mp4")
     print response.geturl()
     print response.getcode()
-    print response.info()
+    print response.info(),response.info()["Content-Length"]
 except urllib2.HTTPError,e:
     print e.code
 
