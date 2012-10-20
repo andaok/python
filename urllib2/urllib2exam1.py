@@ -9,3 +9,12 @@ Created on Jun 9, 2012
 
 '''
 import urllib2
+
+httpHandler = urllib2.HTTPHandler(debuglevel=1)
+httpsHandler = urllib2.HTTPHandler(debuglevel=1)
+
+opener = urllib2.build_opener(httpHandler,httpsHandler)
+
+urllib2.install_opener(opener)
+
+response = urllib2.urlopen("http://www.163.com")
