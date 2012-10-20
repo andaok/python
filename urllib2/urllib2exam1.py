@@ -22,6 +22,7 @@ try:
     print response.getcode()
     print response.info(),response.info()["Content-Length"]
 except urllib2.HTTPError,e:
+    #IF OPEN URL FAIL,PRINT HTTP RETURN CODE
     print e.code
 
 
