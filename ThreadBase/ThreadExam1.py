@@ -7,6 +7,10 @@ Created on Jun 9, 2012
 
 '''
 
+"""
+对发出的命令进行控制：失败重试,超时kill,控制该命令stdin,stdout,stderr.
+"""
+
 import os
 import sys
 import time
@@ -29,8 +33,6 @@ from popen2 import Popen3
 #local imports
 #from ctx_exceptions import UnexpectedError, IncompatibleEnvironment
 #from ctx_logging import getlog
-
-
 
 def getlog(logfile="/tmp/log.log"):
     logger = logging.Logger("logrecord")
@@ -184,7 +186,10 @@ def runexe(cmd, killtime=2.0, retry=0):
         
     return (thr.exit, thr.stdout, thr.stderr)
 
-
-
+#################
+#MAIN
+#################
+if __name__ == "__main__":
+    
 
 
