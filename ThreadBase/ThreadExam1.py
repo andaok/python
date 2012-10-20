@@ -190,6 +190,10 @@ def runexe(cmd, killtime=2.0, retry=0):
 #MAIN
 #################
 if __name__ == "__main__":
-    
+    (exitcode,stdout,stderr) = runexe("ls -al  /var/data/github")
+    logger = getlog() 
+    logger.debug("program exit code : %s"%exitcode)
+    logger.debug("program stdout : %s"%stdout)
+    logger.debug("program stderr : %s"%stderr)
 
 
