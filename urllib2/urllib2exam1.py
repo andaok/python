@@ -17,10 +17,10 @@ opener = urllib2.build_opener(httpHandler,httpsHandler)
 urllib2.install_opener(opener)
 
 try:
-    response = urllib2.urlopen("http://www.163.com")
+    response = urllib2.urlopen("http://www.python.org/")
     print response.geturl()
     print response.getcode()
-    print response.info(),response.info()["Content-Length"]
+    print response.info()
 except urllib2.HTTPError,e:
     #IF OPEN URL FAIL,PRINT HTTP RETURN CODE
     print e.code
