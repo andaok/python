@@ -22,6 +22,7 @@ req = urllib2.Request(url='http://10.1.1.10/cgi-bin/test.cgi',data='this data is
 f = urllib2.urlopen(req)
 
 print f.read()
+print f.info()
 
 #CGI PROGRAM
 #!/usr/bin/env python
