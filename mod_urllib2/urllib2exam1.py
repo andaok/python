@@ -19,7 +19,7 @@ urllib2.install_opener(opener)
 try:
     response = urllib2.urlopen("http://www.python.org/")
     #DISPLAY THE PAGE THE FIRST 100 BYTES
-    print response.read(100)
+    print response.read(1000)
     print response.geturl()
     print response.getcode()
     print response.info()
