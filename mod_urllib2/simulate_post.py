@@ -35,15 +35,17 @@ f.close()
 boundaryflag="---------------------------976794555999887760121093636"
 
 senddata=""
-senddata = senddata+boundaryflag
 senddata = senddata+"\r\n"
+senddata = senddata+boundaryflag
+senddata = senddata+"\r\n\r\n"
 senddata = senddata+"Content-Disposition:form-data;name='file';filename='xiha.txt'"
 senddata = senddata+"\r\n"
 senddata = senddata+"Content-Type:text/plain"
 senddata = senddata+"\r\n"
 senddata = senddata+data
-senddata = senddata+boundaryflag+"--"
 senddata = senddata+"\r\n"
+senddata = senddata+boundaryflag+"--"
+senddata = senddata+"\n"
 
 reqobj.add_data(senddata)
 
