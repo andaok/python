@@ -3,5 +3,14 @@
 '''
 Created on 2012-10-23
 
-@author: root
+@author: wye
 '''
+
+"""
+Simulate post data to web server
+"""
+
+import urllib2
+
+
+
