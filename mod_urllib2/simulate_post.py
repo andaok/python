@@ -12,5 +12,6 @@ Simulate post data to web server
 
 import urllib2
 
+reqobj = urllib2.Request(url='http://10.1.1.10/upload.php')
 
 
