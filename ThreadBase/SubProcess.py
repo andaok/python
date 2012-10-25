@@ -15,7 +15,7 @@ for i in range(4):
     p = Popen("cp /tmp/test/tmp%s.txt  /tmp/test/temp%s.txt"%(i+1,i+1),shell=True)
     list[i] = p
     
-print list 
+print list
 
 for i in list:
     done = False
