@@ -18,5 +18,6 @@ class KissThread(threading.Thread):
         print "done with stuff"
 
 for t in range(5):
-    KissThread().start()
+    ThreadKissThread().start()
+    
     KissThread().join()
