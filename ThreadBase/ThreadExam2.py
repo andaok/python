@@ -19,3 +19,4 @@ class KissThread(threading.Thread):
 
 for t in range(5):
     KissThread().start()
+    KissThread().join()
