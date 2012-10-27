@@ -21,10 +21,11 @@ for i in list:
     done = False
     while not done and timeout > 0:
         time.sleep(0.2)
+        print list[i].wait() 
         if list[i].wait() != -1:
             done = True
         timeout -=0.2
     if list[i].wait() != 0:
          sys.exit(list[i].wait())
-
+    print list[i].wait() 
 print "END"    
