@@ -12,7 +12,7 @@ timeout = 1
 list = {}
 
 for i in range(4):
-    p = Popen("cp /tmp/test/tmp%s.txt  /tmp/test/temp%s.txt"%(i+1,i+1),shell=True)
+    p = Popen("ls -al /tmp > /dev/null",shell=True)
     list[i] = p
     
 print list
@@ -21,7 +21,7 @@ for i in list:
     done = False
     while not done and timeout > 0:
         time.sleep(0.2)
-        print list[i].wait() 
+        print "one is %s"%list[i].wait() 
         if list[i].wait() != -1:
             done = True
         timeout -=0.2
