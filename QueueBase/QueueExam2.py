@@ -1,8 +1,14 @@
+# -*- encoding:utf-8 -*-
+
 '''
 Created on 2012-10-28
 
 @author: root
 '''
+
+"""
+限制队列的大小，如果队列满了，那么控制主线程(threads producer)被阻塞,等待项目被弹出队列.
+"""
 
 import threading
 import Queue
