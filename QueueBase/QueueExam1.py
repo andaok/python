@@ -1,8 +1,14 @@
+# -*- encoding:utf-8 -*-
+
 '''
 Created on 2012-10-28
 
 @author: root
 '''
+
+"""
+在多个线程里访问同一个队列对象
+"""
 
 import threading
 import Queue
@@ -34,3 +40,4 @@ for i in range(10):
 
 for i in range(WORKERS):
     queue.put(None)
+
