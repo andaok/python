@@ -30,8 +30,8 @@ for i in range(WORKERS):
     Worker(queue).start()
     
 for item in range(10):
-    print "push" , item
     queue.put(item)
+    print "push" , item
     
 for i in range(WORKERS):
     queue.put(None)
