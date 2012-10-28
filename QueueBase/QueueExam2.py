@@ -22,14 +22,14 @@ class Worker(threading.Thread):
             item = self.__queue.get()
             if item is None:
                 break
-            time.sleep(random.randint(10,100)/1000)
+            #time.sleep(random.randint(10,100)/1000)
+            time.sleep(2)
             print self.__thname,"task",item,"finished"
             
 queue = Queue.Queue(3)
 
 for i in range(WORKERS):
-    Worker(queue,i).start()
-    print i
+    Worker(queue,i+1).start()
     
 for item in range(10):
     queue.put(item)
