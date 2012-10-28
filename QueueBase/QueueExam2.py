@@ -12,8 +12,9 @@ WORKERS = 2
 
 class Worker(threading.Thread):
     
-    def __init__(self,queue):
+    def __init__(self,queue,thname):
         self.__queue = queue
+        self.__thname = thname
         threading.Thread.__init__(self)
         
     def run(self):
@@ -22,12 +23,13 @@ class Worker(threading.Thread):
             if item is None:
                 break
             time.sleep(random.randint(10,100)/1000)
-            print "task",item,"finished"
+            print self.__thname,"task",item,"finished"
             
 queue = Queue.Queue(3)
 
 for i in range(WORKERS):
-    Worker(queue).start()
+    Worker(queue,i+1).start()
+    print i
     
 for item in range(10):
     queue.put(item)
