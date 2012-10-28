@@ -28,7 +28,7 @@ class Worker(threading.Thread):
 queue = Queue.Queue(3)
 
 for i in range(WORKERS):
-    Worker(queue,i+1).start()
+    Worker(queue,i).start()
     print i
     
 for item in range(10):
