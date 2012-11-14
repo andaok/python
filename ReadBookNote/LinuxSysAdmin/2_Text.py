@@ -12,3 +12,12 @@ print " jack  \
         terry \
         luay  \
       "
+      
+print """ jack
+          terry 
+          luay
+      """
+      
+uname = "Linux #1 SMP Tue Feb"
+
+print "Linux" in uname
