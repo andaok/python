@@ -29,3 +29,11 @@ print uname.index("SMP")
 SMP_index = uname.index("SMP")
 print uname[SMP_index:]
 print uname[:SMP_index]
+
+print uname.startswith("Linux")
+print uname.endswith("Feb1")
+
+#切分技术实现startswith和endswitch
+
+
+
