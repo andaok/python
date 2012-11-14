@@ -1,3 +1,5 @@
+#-*- encoding:utf-8 -*-
+
 '''
 Created on 2012-11-15
 
@@ -33,7 +35,12 @@ print uname[:SMP_index]
 print uname.startswith("Linux")
 print uname.endswith("Feb1")
 
-#切分技术实现startswith和endswitch
+#切分技术实现startswith和endswith
+
+if uname[:len("Linux")] == "Linux":
+    print True
+else:
+    print False
 
 
 
