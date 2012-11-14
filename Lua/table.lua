@@ -13,4 +13,4 @@
     20      
   }
 
-print(T1)
+print(T1.John.age,T1[1])
