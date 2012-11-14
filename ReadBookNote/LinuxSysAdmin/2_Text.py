@@ -62,4 +62,19 @@ print "jack123terry123jilly".split("123")
 
 print "jack,terry,jilly,hello".split(",",1)
 
+#splitlines由字符串中每行组成的列表
+multi_line_string = """ this
+                        is
+                        a multiline
+                        piece of
+                        text
+                        """
+print multi_line_string.splitlines()
+
+
+list = ["jack","terry","jilly"]
+print '|'.join(list)
+
+print range(10)
+
 
