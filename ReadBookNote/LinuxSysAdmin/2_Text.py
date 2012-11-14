@@ -58,5 +58,8 @@ print "XiHa".lower() == "xiha"
 print "XiHa".upper() == "XIHA"
 
 print "jack,terry,jilly".split(',')
-
 print "jack123terry123jilly".split("123")
+
+print "jack,terry,jilly,hello".split(",",1)
+
+
