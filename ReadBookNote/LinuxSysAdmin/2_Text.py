@@ -42,5 +42,12 @@ if uname[:len("Linux")] == "Linux":
 else:
     print False
 
+#lstrip,rstrip,strip不只是被用来删除前后空格
+
+xml_tag = "<some_tag>"
+print xml_tag.lstrip("<")
+print xml_tag.rstrip(">")
+
+print xml_tag.strip("<>")
 
 
