@@ -48,6 +48,8 @@ xml_tag = "<some_tag>"
 print xml_tag.lstrip("<")
 print xml_tag.rstrip(">")
 
-print xml_tag.strip("<>")
-
+#strip不是仅仅删除匹配"<>",是删除"<"和">"任何可能的组合
+print xml_tag.strip("<>")  # some_tag
+#strip删除字符串中包含的"<","f","o","o",">"四个字符
+print "<foooooooo>blsh<foo>".strip("<foo>")  #blsh
 
