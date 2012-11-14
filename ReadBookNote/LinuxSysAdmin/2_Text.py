@@ -53,3 +53,10 @@ print xml_tag.strip("<>")  # some_tag
 #strip删除字符串中包含的"<","f","o","o",">"四个字符
 print "<foooooooo>blsh<foo>".strip("<foo>")  #blsh
 
+
+print "XiHa".lower() == "xiha"
+print "XiHa".upper() == "XIHA"
+
+print "jack,terry,jilly".split(',')
+
+print "jack123terry123jilly".split("123")
