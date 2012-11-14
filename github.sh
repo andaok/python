@@ -4,14 +4,13 @@
 #THIS SCRIPT FOR EASY TO MANAGE GITHUB
 #############################
 
-PROJECTDIR="/var/data/github/python"
-GITHUBREPO="andaok/python.git"
+PROJECTDIR=$1
 
 #SWITCH TO PROJECT DIR
 cd $PROJECTDIR
 
-CMD=$1
-COMMIT=$2
+CMD=$2
+COMMIT=$3
 DATE=$(date "+%Y%m%d/%H%M")
 
 if [ "X$CMD" == "Xadd" ]; then
