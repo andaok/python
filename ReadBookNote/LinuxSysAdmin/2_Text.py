@@ -133,6 +133,7 @@ print "Start Test match and search...."
 re_obj = re.compile("FOO")
 print re_obj.search("xiha FOO and")
 print re_obj.search("xiha FOO and",5,8)
+
 print re_obj.match("xiha FOO")
 print re_obj.match("xiha FOO and",5,8)
 
