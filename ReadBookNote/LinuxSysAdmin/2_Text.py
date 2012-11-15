@@ -165,3 +165,7 @@ print list
 for index , item in enumerate(list):
     print index,":",item 
 
+#字典setdefault
+dict = {}
+dict.setdefault("groups",[])
+
