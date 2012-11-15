@@ -94,4 +94,8 @@ for match in re_obj.findall(some_string):
 pattern = 'pDq'
 re_obj = re.compile(pattern)
 print re_obj.search("xiha,pDq,xczxc,pDq")
-    
+
+some_string = 'a few little words'    
+raw_pattern = r'\b[a-z]+\b'
+re_obj = re.compile(raw_pattern)
+print re_obj.findall(some_string)
