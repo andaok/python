@@ -19,20 +19,43 @@ def h():
 h()
 
 c=h()
-c.next() 
-c.next()
+c.next()  # "hello world"
+c.next()  # "nihao,world" ,不是"hello world " "nihao,world"
 
-#send()可以传递yield表达式的值进去,而send()不能传递特定的值,只能传递None进去, c.send(none) == c.next()
+#yield的代码叠代能力不但能打断函数执行还能记下断点处的数据，下次next书接上回，这正是递归函数需要的。
+
+#send()可以传递yield表达式的值进去,而next()不能传递特定的值,只能传递None进去, c.send(none) == c.next()
 #需要提醒的是，第一次调用时，请使用next()语句或是send(None)，不能使用send发送一个非None的值，否则会出错的，因为没有yield语句来接收这个值。
 
 def w():
     print "hello"
     m = yield 5 
     print m
-    d = yield 12
     print "how are you?"
+    yield 12
+   
     
 c= w()
-c.next()
+m = c.next() 
+print m
 
-c.send("JACK")
+d = c.send("JACK")
+print d
+
+#实例
+from StringIO import StringIO
+conf_string = open("File/Apache.conf").read()
+conf_file = StringIO(conf_string)
+
+def yieldTest():
+    for line in conf_file:
+        yield line
+        
+#可以这么认为, yieldTest函数在加yield后变为迭代器了.      
+       
+print yieldTest().next()
+print yieldTest().next()
+print yieldTest().next()
+
+for line in yieldTest():
+    print line
