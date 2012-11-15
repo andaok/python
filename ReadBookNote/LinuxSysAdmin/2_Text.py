@@ -146,3 +146,16 @@ re_obj = re.compile(r'\s+')
 print re_obj.sub("-",text)
 
 
+text = "DocumentRoot /var/www/"
+pattern = r'(DocumentRoot\s+)(\S+)'
+re_obj = re.compile(pattern)
+print re_obj.sub(r'\1xiha',text) # DocumentRoot xiha
+
+text = "<VirtualHost localhost:80> <VirtualHost local2:80> <VirtualHost local3:80>"
+pattern = r'<VirtualHost\s+(.*?)>'
+re_obj = re.compile(pattern)
+print re_obj.match(text).groups()  # ('localhost:80',)
+print re_obj.search(text).groups() # ('localhost:80',)
+print re_obj.findall(text)         # ['localhost:80', 'local2:80', 'local3:80']
+
+
