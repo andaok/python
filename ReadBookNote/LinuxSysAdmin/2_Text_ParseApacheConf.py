@@ -12,11 +12,13 @@ def replace_docroot(conf_string,vhost,new_docroot):
     in_vhost = False
     curr_vhost = None
     for line in conf_file:
+        print "LINE 1",line
         vhost_start_match = vhost_start.search(line)
         if vhost_start_match:
            curr_vhost = vhost_start_match.groups()[0]
            in_vhost = True
         if in_vhost and (curr_vhost == vhost):
+           print "LINE 2",line
            docroot_match = docroot_re.search(line)
            if docroot_match:
               sub_line = docroot_re.sub(r'\1%s'%new_docroot,line)
