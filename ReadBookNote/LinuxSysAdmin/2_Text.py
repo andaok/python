@@ -99,3 +99,28 @@ some_string = 'a few little words'
 raw_pattern = r'\b[a-z]+\b'
 re_obj = re.compile(raw_pattern)
 print re_obj.findall(some_string)
+
+re_obj = re.compile(r'\bt.*?e\b')
+print re_obj.findall("time,tame,tune,tint,tire")
+
+re_obj = re.compile(r'\b\w*e\b')
+print re_obj.findall("time,tame,tune,tint,tire")
+
+#模式分组
+re_obj = re.compile(r"""
+
+A\W+\b(big|small)\b\W+\b
+(brown|purple)\b\W+\b(cow|dog)\b\W+\b(ran|jumped)\b\W+\b
+(to|down)\b\W+\b(the)\b\W+\b(street|moon).*?\.
+""",re.VERBOSE)
+
+print re_obj.findall('A big brown dog ran down the street. \
+A small purple cow jumped to the moon.')
+
+
+
+
+
+
+
+
