@@ -76,8 +76,8 @@ list = ["jack","terry","jilly"]
 print '|'.join(list)
 
 print range(10)
-
 ",".join([str(i) for i in range(10)])
 
 print "jack,terry,jilly,dog".replace("dog", "lucy")
 
+#re 正则表达式
