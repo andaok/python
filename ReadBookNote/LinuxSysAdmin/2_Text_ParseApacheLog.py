@@ -23,7 +23,7 @@ def generate_log_report(logfile):
         except ValueError:
             continue
         report_dict.setdefault(line_dict['remote_host'],[]).append(bytes_sent)
-        return report_dict
+    return report_dict
 
 if __name__ == "__main__":
     try:
@@ -31,5 +31,6 @@ if __name__ == "__main__":
     except IOError:
         sys.exit(1)
     print generate_log_report(infile)
+    
     infile.close()
     
