@@ -167,5 +167,7 @@ for index , item in enumerate(list):
 
 #字典setdefault
 dict = {}
-dict.setdefault("groups",[])
+print dict.setdefault("groups",[]) #其实是显示“groups”这个键的值,如在dict中存在就显示该值,如不存在就用默认值,如本例显示"[]"
+print dict.setdefault("groups",[]).append("physical")
+print dict
 
