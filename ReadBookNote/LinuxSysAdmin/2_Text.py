@@ -80,9 +80,7 @@ print range(10)
 
 print "jack,terry,jilly,dog".replace("dog", "lucy")
 
-<<<<<<< HEAD
-#re 正则表达式
-=======
+
 #RE正则表达式
 
 import re
@@ -166,4 +164,4 @@ list = ["my%s"%str(i) for i in range(10)]
 print list
 for index , item in enumerate(list):
     print index,":",item 
->>>>>>> d13ddb37f527ed0346af6b74cb853ba7ab2f254b
+
