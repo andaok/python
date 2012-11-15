@@ -137,8 +137,12 @@ print re_obj.search("xiha FOO and",5,8)
 print re_obj.match("xiha FOO")
 print re_obj.match("xiha FOO and",5,8)
 
+#re.sub()
+text = "hello world , my friends"
+print re.sub(r'\s+',"-",text)
 
-
-
+#或
+re_obj = re.compile(r'\s+')
+print re_obj.sub("-",text)
 
 
