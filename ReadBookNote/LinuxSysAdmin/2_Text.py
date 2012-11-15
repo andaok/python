@@ -83,3 +83,15 @@ print "jack,terry,jilly,dog".replace("dog", "lucy")
 
 #RE正则表达式
 
+import re
+re_obj = re.compile("{{(.*?)}}")
+some_string = "this is a string with {{words}} embedded in \
+{{curly brackers}} to show an {{example}} of {{regular expressions}}"
+for match in re_obj.findall(some_string):
+    print "MATCH->",match
+
+
+pattern = 'pDq'
+re_obj = re.compile(pattern)
+print re_obj.search("xiha,pDq,xczxc,pDq")
+    
