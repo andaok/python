@@ -158,4 +158,9 @@ print re_obj.match(text).groups()  # ('localhost:80',)
 print re_obj.search(text).groups() # ('localhost:80',)
 print re_obj.findall(text)         # ['localhost:80', 'local2:80', 'local3:80']
 
+#enumerate函数，一般遍历list得不到item的index.
 
+list = ["my%s"%str(i) for i in range(10)]
+print list
+for index , item in enumerate(list):
+    print index,":",item 

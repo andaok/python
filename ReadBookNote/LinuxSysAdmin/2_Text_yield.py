@@ -63,3 +63,19 @@ print yieldTest().next()
 
 for line in yieldTest():
     print line
+
+#实例,做自己的迭代对象.
+def myRange(r):
+    i = 0
+    while i < r:
+        yield "%s\n"%i
+        i = i+1
+f = open("File/examfile.txt",'w')
+f.writelines(myRange(10))
+f.close()
+
+#上例相等于下例
+f = open("File/examfile1.txt","w")
+f.writelines("%s\n"%i for i in range(10))
+f.close()
+        
