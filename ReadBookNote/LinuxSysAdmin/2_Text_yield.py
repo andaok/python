@@ -23,6 +23,7 @@ c.next()
 c.next()
 
 #send()可以传递yield表达式的值进去,而send()不能传递特定的值,只能传递None进去, c.send(none) == c.next()
+#需要提醒的是，第一次调用时，请使用next()语句或是send(None)，不能使用send发送一个非None的值，否则会出错的，因为没有yield语句来接收这个值。
 
 def w():
     print "hello"
