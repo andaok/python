@@ -93,7 +93,13 @@ for match in re_obj.findall(some_string):
 
 pattern = 'pDq'
 re_obj = re.compile(pattern)
-print re_obj.search("xiha,pDq,xczxc,pDq")
+print re_obj.search("xiha,pDq,xczxc,pDq").group()
+print re_obj.search("xiha,pDq,xczxc,pDq").start()
+print re_obj.search("xiha,pDq,xczxc,pDq").end()
+print re_obj.search("xiha,pDq,xczxc,pDq").span()
+print re_obj.search("xiha,pDq,xczxc,pDq").groupdict()
+
+
 
 some_string = 'a few little words'    
 raw_pattern = r'\b[a-z]+\b'
@@ -108,15 +114,21 @@ print re_obj.findall("time,tame,tune,tint,tire")
 
 #模式分组
 re_obj = re.compile(r"""
-
+(
 A\W+\b(big|small)\b\W+\b
 (brown|purple)\b\W+\b(cow|dog)\b\W+\b(ran|jumped)\b\W+\b
 (to|down)\b\W+\b(the)\b\W+\b(street|moon).*?\.
-""",re.VERBOSE)
+)""",re.VERBOSE)
 
 print re_obj.findall('A big brown dog ran down the street. \
 A small purple cow jumped to the moon.')
 
+#finditer
+for item in re_obj.finditer('A big brown dog ran down the street. A small purple cow jumped to the moon.'):
+    print item
+    print item.groups()
+    
+#match,search
 
 
 
