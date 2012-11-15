@@ -81,3 +81,5 @@ print range(10)
 
 print "jack,terry,jilly,dog".replace("dog", "lucy")
 
+#RE正则表达式
+
