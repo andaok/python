@@ -1,5 +1,9 @@
 #-*- encoding:utf-8 -*-
 
+"""
+Refer : http://www.cnblogs.com/coderzh/archive/2008/05/18/1202040.html
+"""
+
 def addlist(alist):
     for i in alist:
         yield i+1
