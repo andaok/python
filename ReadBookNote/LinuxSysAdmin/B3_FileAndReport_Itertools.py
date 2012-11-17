@@ -82,8 +82,35 @@ for el in cycle(['a','b','c','d','e']):
 #返回一个迭代器,只要函数predicate(item)为True,就丢弃iterator的项,如果函数predicate(item)为False,则返回该项及其后续所有项.
 for el in dropwhile(lambda x:x<5,[1,4,6,4,1]):
     print el # 6,4,1
+    
+#用生成器能达到同样效果
+def dropwhile1(predicate,iterator):
+    #iterator = iter(iterator)
+    for x in iterator:
+        if not predicate(x):
+            yield x
+            break
+    for x in iterator:
+        yield x
+ 
+for el in dropwhile1(lambda x:x<5,[1,4,6,4,1]):
+    print el # 6,4,1
 
-   
+
+#-------iter--------------------------------
+#Get an iterator from an object.  In the first form, the argument must
+#supply its own iterator, or be a sequence.
+i = iter('abcd')
+print i.next()
+print i.next()
+
+s = {'one':1,'two':2,'three':3}
+m = iter(s)
+print m.next()
+print m.next()
+print m.next()
+#---------------------------------------------
+
 
     
     
