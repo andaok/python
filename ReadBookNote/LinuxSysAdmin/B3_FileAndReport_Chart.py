@@ -31,13 +31,10 @@ def chartBar():
 import itertools
 def chartPie():
     shelve_file = shelve.open("File/BytesSumPerHost.bat")
-    #items_list = [(i[1],i[0]) for i in shelve_file.items() if i[1]>0]
-    items_list = [(i[1],i[0]) for i in shelve_file.items()]
+    items_list = [(i[1],i[0]) for i in shelve_file.items() if i[1]>0]
     items_list.sort()
     bytes_sent = [i[0] for i in items_list]
-    print bytes_sent
     ip_addresses = [i[1] for i in items_list]
-    print ip_addresses
     chart = gdchart.Pie()
     chart.width = 400
     chart.height = 400
@@ -49,7 +46,9 @@ def chartPie():
     chart.color = color_list
     chart.plot_color = 'black'
     chart.title = "Usage By Ip Address"
-    chart.setData(12, 12, 24, 48, 140)
+    
+    #chart.setData()不能直接接受list为参数,应该是个bug
+    chart.setData(*bytes_sent)
     chart.setLabels(ip_addresses)
     chart.draw("File/bytes_ip_pie.png")
 
