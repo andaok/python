@@ -84,18 +84,36 @@ for el in dropwhile(lambda x:x<5,[1,4,6,4,1]):
     print el # 6,4,1
     
 #用生成器能达到同样效果
+#**给iterator参数赋值为一个序列,在iter(iterator)后使其迭代化,变为一个迭代器***
+#[1,4,6,4,1]是序列,而iter([1,4,6,4,1])是迭代器
+#序列是数据结构存储数据的,而将其迭代化后其就具有迭代记忆功能了.能记住自己迭代到那个元素了.
+"""
+for i in iter([1,4,6,4,1]):
+    print i
+只是将iter([1,4,6,4,1]).next()动作自动化了.
+"""
+
 def dropwhile1(predicate,iterator):
-    #iterator = iter(iterator)
+    iterator = iter(iterator)
     for x in iterator:
         if not predicate(x):
             yield x
             break
     for x in iterator:
         yield x
- 
+
+generator_obj = dropwhile1(lambda x:x<5,[1,4,6,4,1])
+print generator_obj.next()
+print generator_obj.next()
+print generator_obj.next()
+
+#将上面的动作自动化
+''' 
 for el in dropwhile1(lambda x:x<5,[1,4,6,4,1]):
     print el # 6,4,1
+'''
 
+#-------------------------------------------
 
 #-------iter--------------------------------
 #Get an iterator from an object.  In the first form, the argument must
