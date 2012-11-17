@@ -26,7 +26,7 @@ def chartBar():
     chart.draw("File/bytes_ip_adr.png")
     shelve_file.close()
 
-#chartBar()
+chartBar()
 
 import itertools
 def chartPie():
