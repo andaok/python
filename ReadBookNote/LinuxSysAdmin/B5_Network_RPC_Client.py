@@ -32,7 +32,7 @@ def PyroExample():
     
 ##################################
 
-class PSACB():
+class PSACB:
     def __init__(self):
         self.some_attribute = 1
         
