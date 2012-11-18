@@ -36,7 +36,7 @@ class PSACB():
     def __init__(self):
         self.some_attribute = 1
         
-    def cb(self):
+    def test(self):
         return "PSA callback"
 
 ##################################
