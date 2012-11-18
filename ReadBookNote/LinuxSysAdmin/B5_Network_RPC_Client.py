@@ -47,11 +47,14 @@ if __name__ == "__main__":
     
     
     cb = PSACB()
+    
+    '''
     print "PYRO SECTION"
     print "*"*20
     psapyro = Pyro.core.getProxyForURI("PYROLOC://127.0.0.1:7766/psaexample")
     print "--->>",psapyro.cb(cb)
     print "*"*20
+    '''
     
     print "XML-RPC SECTION"
     print "*"*20
