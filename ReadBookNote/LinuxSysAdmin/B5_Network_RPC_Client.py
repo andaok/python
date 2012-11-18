@@ -41,6 +41,13 @@ class PSACB():
 
 ##################################
 if __name__ == "__main__":
-    PyroExample()
+
+    #XMLRPCExample()
+    #PyroExample()
+    
+    cb = PSACB()
+    print "PYRO SECTION"
+    PRINT "*"*20
+    
 
 
