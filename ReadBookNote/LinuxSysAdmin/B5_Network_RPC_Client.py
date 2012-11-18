@@ -8,7 +8,7 @@ Created on 2012-11-18
 
 import xmlrpclib
 
-def XMLRPC():
+def XMLRPCExample():
     x = xmlrpclib.ServerProxy('http://127.0.0.1:8765')
 
     print x.ls('.')
@@ -20,3 +20,14 @@ def XMLRPC():
     print x.ls_boom('/tmp/nopdir')
 
 
+import pyro.core
+
+def PyroExample():
+    psa = Pyro.core.getProxyForURI("PYROLOC://127.0.0.1:7766/psaexample")
+    
+    print psa.ls('/tmp')
+    
+    print psa.ls_boom("/tmp/nodir")
+    
+
+PyroExample()
