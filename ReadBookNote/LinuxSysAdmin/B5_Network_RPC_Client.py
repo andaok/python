@@ -42,10 +42,10 @@ class PSACB():
 ##################################
 if __name__ == "__main__":
 
-    XMLRPCExample()
-    PyroExample()
+    #XMLRPCExample()
+    #PyroExample()
     
-    '''
+    
     cb = PSACB()
     print "PYRO SECTION"
     print "*"*20
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     psaxmlrpc = xmlrpclib.ServerProxy("http://127.0.0.1/8765")
     print psaxmlrpc.cb(cb)
     print "*"*20
-    '''
+    
     
     
 
