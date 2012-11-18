@@ -23,7 +23,7 @@ def ls_boom(directory):
 def cb(obj):
     print "OBJECT::",obj
     print "OBJECT.__class__",obj.__class__
-    return obj.cb()
+    return obj.test()
 
 if __name__ == "__main__":
     s = SimpleXMLRPCServer.SimpleXMLRPCServer(('127.0.0.1',8765))

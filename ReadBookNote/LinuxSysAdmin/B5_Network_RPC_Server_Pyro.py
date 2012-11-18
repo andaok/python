@@ -27,7 +27,7 @@ class PSAExample(Pyro.core.ObjBase):
     def cb(self,obj):
         print "OBJECT:",obj
         print "OBJECT.__class__",obj.__class__
-        print obj.test()
+        return obj.cb()
         
 if __name__ == "__main__":
     Pyro.core.initServer()
