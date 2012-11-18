@@ -45,7 +45,7 @@ def chartPie():
         color_list.append(color_cycle.next())
     chart.color = color_list
     chart.plot_color = 'black'
-    chart.title = "Usage By Ip Address"
+    chart.title = "Usage By Ip Address "
     
     #chart.setData()不能直接接受list为参数,应该是个bug
     chart.setData(*bytes_sent)
