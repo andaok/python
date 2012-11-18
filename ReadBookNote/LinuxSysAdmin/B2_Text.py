@@ -81,7 +81,7 @@ print range(10)
 print "jack,terry,jilly,dog".replace("dog", "lucy")
 
 
-#RE正则表达式
+#----RE正则表达式-----------------------
 
 import re
 re_obj = re.compile("{{(.*?)}}")
@@ -157,6 +157,13 @@ re_obj = re.compile(pattern)
 print re_obj.match(text).groups()  # ('localhost:80',)
 print re_obj.search(text).groups() # ('localhost:80',)
 print re_obj.findall(text)         # ['localhost:80', 'local2:80', 'local3:80']
+
+#re.split()
+#split(pattern, string, maxsplit=0)
+text = "hello world nihao friends"
+print "re.split() show" ,re.split(r'\s+',text,2)
+
+#------------------------------------------
 
 #enumerate函数，一般遍历list得不到item的index.
 
