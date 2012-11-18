@@ -8,7 +8,7 @@ Created on 2012-11-18
 
 #pyro
 
-import pyro.core
+import Pyro
 import os
 
 from B5_Network_RPC_Client import PSACB

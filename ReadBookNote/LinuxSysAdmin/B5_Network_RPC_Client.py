@@ -19,8 +19,9 @@ def XMLRPCExample():
 
     print x.ls_boom('/tmp/nopdir')
 
+#################################
 
-import pyro.core
+import Pyro.core
 
 def PyroExample():
     psa = Pyro.core.getProxyForURI("PYROLOC://127.0.0.1:7766/psaexample")
@@ -29,5 +30,17 @@ def PyroExample():
     
     print psa.ls_boom("/tmp/nodir")
     
+##################################
 
-PyroExample()
+class PSACB():
+    def __init__(self):
+        self.some_attribute = 1
+        
+    def cb(self):
+        return "PSA callback"
+
+##################################
+if __name__ == "__main__":
+    PyroExample()
+
+
