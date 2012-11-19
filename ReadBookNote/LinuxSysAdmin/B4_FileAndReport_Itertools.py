@@ -173,7 +173,15 @@ for name_length,name_iter in groups:
 assert 1+1 == 2
 #assert 1+1 == 3
 
-assert 2+2 == 5,"Sum is Error value"
+#assert 2+2 == 5,"Sum is Error value"
+#----------------------------------------------
+
+#-----迭代器列表化和字典化-------------------------
+characters = ('S', 'M', 'E', 'D', 'O', 'N', 'R', 'Y')
+guess = ('1', '2', '0', '3', '4', '5', '6', '7')
+
+print tuple(zip(characters, guess))
+print dict(zip(characters, guess)) 
 #----------------------------------------------
     
     

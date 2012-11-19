@@ -79,3 +79,21 @@ f = open("File/examfile1.txt","w")
 f.writelines("%s\n"%i for i in range(10))
 f.close()
         
+#----生成器表达式-------------------------
+#生成器表达式
+w = ['E', 'D', 'M', 'O', 'N', 'S', 'R', 'Y']
+gen = (ord(c) for c in w)
+print gen
+print gen.next()
+print gen.next()
+
+#使用yield实现上述
+def ord_map(w):
+    for i in w:
+        yield ord(i)
+gen = ord_map(w)
+print gen.next()
+print gen.next()
+
+#生成器表达式功能相同但更紧凑
+#---------------------------------------
