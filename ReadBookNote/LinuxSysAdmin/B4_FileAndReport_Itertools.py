@@ -184,9 +184,22 @@ print tuple(zip(characters, guess))
 print dict(zip(characters, guess)) 
 #----------------------------------------------
 
-#------字符串translate方法-----------------------
-translate_table = {ord('A'):ord('O')}  
-print 'MARK'.translate(translate_table)
+#------字符串translate and maketrans------------
+import string
+
+#string.maketrans设置字符串转换规则表
+#allchars = string.maketrans(",")  #所有字符串,不转换
+#print allchars
+
+atop = string.maketrans("e","a")  #建立"a"转为"a"的规则
+
+s = "ahello python"
+print s.translate(atop,'o')   #将"e"换为"a",同时删除"o"
+
+#-----------------------------------------------
+
+
+
 
 #----------------------------------------------
     
