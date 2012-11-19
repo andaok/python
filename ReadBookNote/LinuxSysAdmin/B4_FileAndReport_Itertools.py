@@ -183,5 +183,10 @@ guess = ('1', '2', '0', '3', '4', '5', '6', '7')
 print tuple(zip(characters, guess))
 print dict(zip(characters, guess)) 
 #----------------------------------------------
-    
+
+#------字符串translate方法-----------------------
+translate_table = {ord('A'):ord('O')}  
+print 'MARK'.translate(translate_table)
+
+#----------------------------------------------
     
