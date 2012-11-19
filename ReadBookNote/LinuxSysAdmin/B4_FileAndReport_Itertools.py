@@ -148,9 +148,32 @@ names = sorted(names,key=len)
 print names
 #---------------------------------------------
 
+#------groupby--------------------------------
 
-    
-    
-    
+#itertools.groupby()函数接受一个序列和一个key函数, 并且返回一个生成二元组的迭代器。每一个二元组包含key_function(each item)的结果和另一个包含着所有共享这个key结果的元素的迭代器。
+groups = groupby(names,len)
+
+#调用list() 函数会“耗尽”这个迭代器, 也就是说 你生成了迭代器中所有元素才创造了这个列表。迭代器没有“重置”按钮。你一旦耗尽了它，你没法重新开始。如果你想要再循环一次(例如, 在接下去的for循环里面), 
+#你得调用itertools.groupby()来创建一个新的迭代器
+print list(groups)
+
+#在这个例子里，给出一个已经按长度排序的名字列表, itertools.groupby(names, len)将会将所有的4个字母的名字放在一个迭代器里面，所有的5个字母的名字放在另一个迭代器里，以此类推。groupby()函数是完全通用的; 
+#它可以将字符串按首字母，将数字按因子数目, 或者任何你能想到的key函数进行分组
+groups = groupby(names,len)
+
+for name_length,name_iter in groups:
+    print "Names with %s letters:"%name_length
+    for name in name_iter:
+        print name
+
+#注：itertools.groupby()只有当输入序列已经按分组函数排过序才能正常工作。在上面的例子里面，你用len() 函数分组了名字列表。这能工作是因为输入列表已经按长度排过序了
+#----------------------------------------------
+
+#------assert----------------------------------
+assert 1+1 == 2
+#assert 1+1 == 3
+
+assert 2+2 == 5,"Sum is Error value"
+#----------------------------------------------
     
     
