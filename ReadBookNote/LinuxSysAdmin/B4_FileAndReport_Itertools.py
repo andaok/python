@@ -196,10 +196,34 @@ atop = string.maketrans("e","a")  #建立"a"转为"a"的规则
 s = "ahello python"
 print s.translate(atop,'o')   #将"e"换为"a",同时删除"o"
 
-#-----------------------------------------------
-
-
-
+#-------ifilter and ifilterfalse----------------------------------------
+#创建一个迭代器，仅生成iterable中predicate(item)为True的项，如果predicate为None，将返回iterable中所有计算为True的项
+print list(ifilter(lambda x:x%2,range(10)))
+print list(ifilterfalse(lambda x:x%2,range(10)))
 
 #----------------------------------------------
+
+#------imap------------------------------------
+#imap(function,iter1,iter2,iter3,....,itern)
+d = imap(pow,(2,3,10),(5,2,3))
+print tuple(d)
+#-----------------------------------------------
+
+#------permutations-----------------------------
+#permutations(iterable[,r])
+#创建一个迭代器，返回iterable中所有长度为r的项目序列，如果省略了r，那么序列的长度与iterable中的项目数量相同
+print list(permutations('ABCD',2))
+print list(permutations(range(3)))
+#-----------------------------------------------
+
+#------product-----------------------------------
+print tuple(product('ABCD',"xy"))
+print list(product(range(2),repeat=2))
+print list(product(range(2),repeat=3))
+#------------------------------------------------
+
+
+
+
+
     
