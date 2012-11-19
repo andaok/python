@@ -129,8 +129,26 @@ print m.next()
 print m.next()
 #---------------------------------------------
 
+#------其它列表相关-----------------------------
+import random
 
-    
+x = [random.randint(0,5) for i in range(20)]
+print x  # [4, 0, 3, 2, 0, 3, 0, 2, 0, 4, 2, 0, 0, 5, 4, 4, 0, 3, 2, 3]
+
+names = ['Dora\n', 'Ethan\n', 'Wesley\n', 'John\n', 'Anne\n','Mike\n', 'Chris\n', 'Sarah\n', 'Alex\n', 'Lizzie\n']
+
+names = [name.strip() for name in names]
+
+#默认按照字母序排序
+names = sorted(names)
+
+#sorted也可接受一个函数作为key参数,然后使用该函数排序,如函数len(),则按照len(each item)排序
+names = sorted(names,key=len)
+
+print names
+#---------------------------------------------
+
+
     
     
     
