@@ -5,6 +5,7 @@ class Person:
         self.age = age
         Person.PersonNum +=1
         #self.__class__.PersonNum +=1
+        
 
     def tell(self):
         print "this person information name %s,age %s"%(self.name,self.age)
@@ -34,6 +35,6 @@ z3 = Student("woji","26","87")
 z3.tell()
 z3.currentPerNum()
 
-#del z2
+del z2
 z1.currentPerNum()
-z2.currentPerNum()
+z3.currentPerNum()
