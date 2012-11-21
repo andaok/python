@@ -98,6 +98,8 @@ class SimpleRunThread(Thread):
         self.log.debug("program starting '%s'" % self.cmd)
         p = Popen3(self.cmd, True)
         
+        print p.pid
+        
         if self.stdin:
             if p.poll() == -1:
                 p.tochild.write(self.stdin)
@@ -116,6 +118,7 @@ class SimpleRunThread(Thread):
             
         if not done and self.killsig != -1:
             try:
+                
                 os.kill(p.pid, self.killsig)
                 self.killed = True
             except OSError, e:
