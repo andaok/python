@@ -66,7 +66,7 @@ def chartLine():
     bytes_sent = [i[0] for i in items_list]
     ip_addresses = [i[1] for i in items_list]
 
-    chart = gdchart.Line() 
+    chart = gdchart.Line3D() 
     chart.width = 400
     chart.height = 400
     chart.bg_color = "white"
@@ -74,7 +74,7 @@ def chartLine():
     chart.xtitle = "IP ADDRESS"
     chart.ytitle = "Bytes Sent"
     chart.title = "Usage bytes by ip address"
-    chart.setData(bytes_sent)
+    chart.setData(bytes_sent,[i+17 for i in range(len(bytes_sent))])
     chart.setLabels(ip_addresses)
     chart.draw("File/bytes_ip_line.png")
     shelve_file.close()    
