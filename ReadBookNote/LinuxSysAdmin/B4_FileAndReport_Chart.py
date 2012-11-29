@@ -71,12 +71,12 @@ def chartLine():
     chart.height = 400
     chart.bg_color = "white"
     chart.plot_color = "black"
-    chart.xtitle = "IP ADDRESS"
-    chart.ytitle = "Bytes Sent"
-    chart.title = "Usage bytes by ip address"
-    chart.setData(bytes_sent)
-    chart.setLabels(ip_addresses)
-    chart.draw("File/bytes_ip_line.png")
+    chart.xtitle = "Block Size (MB) x Block Nums "
+    chart.ytitle = "Time (s)"
+    chart.title = "3 Tasktracker"
+    chart.setData([0,203.277,192.644,180.58,301.978])
+    chart.setLabels([0,"8x8","16x4","32x2","64x1"])
+    chart.draw("File/linevideo1.png")
     shelve_file.close()    
 
 chartLine() 
