@@ -71,11 +71,11 @@ def chartLine():
     chart.height = 400
     chart.bg_color = "white"
     chart.plot_color = "black"
-    chart.xtitle = "Block Size (MB) x Block Nums "
+    chart.xtitle = "Tasktracker Nums"
     chart.ytitle = "Time (s)"
-    chart.title = "3 Tasktracker"
-    chart.setData([0,203.277,192.644,180.58,301.978])
-    chart.setLabels([0,"8x8","16x4","32x2","64x1"])
+    chart.title = "Block Size 8MB,Block Nums 8"
+    chart.setData([0,501.174,469.293,452.384,464.434,475.99,307.415])
+    chart.setLabels([0,3,4,5,6,7,8])
     chart.draw("File/linevideo1.png")
     shelve_file.close()    
 
