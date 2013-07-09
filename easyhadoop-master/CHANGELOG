@@ -1,0 +1,117 @@
+1.1.2-beta2
+Fix node add without agent start bug.
+Bundled Hadoop, JDK, lzo, snappy installation into a bin type self-extract-install package, and support lzo and snappy both(For test only)
+Provide personal fixed hive,hbase rpm testing package to download in repo
+Provide executable bin installation file for manually install in repo.
+Provide self compiled snappy and lzo rpm package
+Ubuntu/debian installation supported now(For test only)
+
+修正节点添加时无法启动agent的bug
+合并hadoop,jdk,lzo,snappy安装为bin类型自解压安装包，并同时支持lzo和snappy两种压缩格式(仅为测试功能)。
+在仓库中提供了个人修订的hive(0.10.0)和hbase(0.94.4)的rpm/deb测试安装包。
+为手工安装hadoop提供了可自运行安装的bin安装文件。
+仓库中提供了自己编译打包的snappy和lzo的rpm/deb安装文件。
+已支持 Ubuntu/debian 安装(仅供测试)
+
+
+
+1.1.2-beta1
+Reconstruct agent and frontend, caution: not compatible with previous version
+Add random token authenticate from central to agent
+System info moved from thrift RPC to cherrypy embedded web server
+Add batch node add
+Add network interface real monitoring
+System hadoop user had been deprecated, instead with hdfs and mapred user, hadoop group
+Agent packaged into rpm
+install script changed from bash to python
+hadoop update to 1.1.2
+jdk update to 6u45
+Add network interface traffic loads monitoring
+Add code support for ubuntu and debian and suse for future update
+Rpm/deb packaged personal fixed Apache Hive 0.10.0 and HBase 0.94.4 for future installation support
+
+重构了代理与前端，注意：与之前版本不兼容
+在中央控制端与代理之间增加了随机令牌验证
+系统监控由thrift RPC迁移为了嵌入式web服务器方式
+增加了批量添加主机
+增加了网卡的实时监控
+系统的hadoop用户被废弃，使用hdfs用户和mapred用户（hadoop组）来代替。
+代理端打包为rpm方式安装
+安装脚本由bash方式改为了python方式
+hadoop更新为1.1.2稳定版
+jdk更新为6u45
+增加网卡流量的实时监控
+增加未来更新对ubuntu, debian和suse安装的代码支持。
+将apache hive 0.10.0和Hbase 0.94.4的个人修订版打包为rpm/deb，以方便未来增加安装选项
+
+
+1.1.1beta4
+add HDFS manage function (commit by foxmoon)
+add failed node list (commit by foxmoon)
+update all fixed language to vars in all views
+update jquery from 1.8.3 to 1.9.1
+update hadoop rpm from 1.1.1 beta release to 1.0.4 stable release
+bug fix(pull request from momodev)
+use sudo command with full command path to prevent sudo no command fault.
+add a Thrift based remote command execute tester
+fix http url rewrite bug
+
+增加HDFS管理界面(commit by foxmoon)
+增加失效主机列表(commit by foxmoon)
+将所有views里面的固定语言书写变为了变量书写
+将jquery从1.8.3更新到了1.9.1
+将hadoop安装包从1.1.1测试版更新为1.0.4稳定版
+bug修复(从momodev提交)
+在sudo命令中使用完整路径以阻止出现无法找到命令的错误。
+增加了一个基于thrift的远程命令测试和提交工具。
+修正了http 重定向地址不可用问题
+
+
+1.1.1b3
+Fix a security problem that can cause XSS attack and SQL injection attack
+update JDK to 6u39
+modify source repo to another IP
+add two meta sql patch with storage sets and hadoop settings
+add rackaware sets.
+add hadoop setting templates
+and other code fixes
+
+
+修正XSS攻击和SQL注入攻击的漏洞
+JDK更新为6u39
+修改了下载hadoop安装包的IP地址
+增加了两个元数据的补丁和存储设置以及hadoop的设置
+增加机架感知脚本相关
+增加了hadoop设置的模板
+其他大量的代码修正
+
+
+1.03 alpha2
+Reconstruct with thrift!!!
+Change jdk to 6u35
+Fix file transport dos format
+Add NodeMonitor page
+Fix Hadoopgpl install bug
+Change hadoopgpl to 0.2.8-1
+Node operate page change to three colored button, not connect(red), Hadoop not start(orange), hadoop ok(green)
+Push hadoop installation file page change to two color, connect with node(green), not connect(red)
+
+1.03 alpha1
+Fix a web timeout when doing hadoop start
+Move Node settings to previous page
+
+1.03 20120826
+Add distributed node agent daemon script
+Add GPV v3 LICENSE file
+Add Bootstrap and a test central console php webpage
+
+v1.02 20120803
+Use rpm to install hadoop 1.0.3
+Rewrite all script, add Hive support by default
+Add monitoring script for hive, and mysql connector in $HIVE_HOME/lib/
+Support CentOS5.x and 6.x x86_64
+Namenode and Datanode installation are under development
+
+v1.01 20120503
+add ntpdate time correct action
+remove some useless package
