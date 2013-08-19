@@ -1,0 +1,17 @@
+########################################
+WSGISocketPrefix  /var/run/wsgi
+
+<VirtualHost 61.183.254.135:80>
+    ServerName auth.cloudiya.com
+
+    WSGIDaemonProcess webservice user=apache group=apache processes=1 threads=5
+    WSGIScriptAlias / /var/www/html/webservice/ServerSide.wsgi
+
+    <Directory /var/www/html/webservice>
+        WSGIProcessGroup webservice
+        WSGIApplicationGroup %{GLOBAL}
+        Order deny,allow
+        Allow from all
+    </Directory>
+</VirtualHost>
+########################################

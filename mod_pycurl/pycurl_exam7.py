@@ -10,11 +10,44 @@
 # ---------------------------/
 
 # -- /
-# 服务端php代码
+# 服务端wye.php代码
 """
 <?php
- $data = file_get_contents("php://input");
- echo $data;
+$rawdata = file_get_contents("php://input");
+
+echo $rawdata;
+
+$fp = explode("\r\n",$rawdata);
+
+$total = count($fp);
+
+echo $total;
+
+foreach($fp as $line)
+{
+  $tmp[] = $line;
+}
+
+print_r($tmp);
+
+for($i=0;$i<$total;$i++)
+ {
+   if ($i == 0 || $i == 1 || $i == 2 || $i == $total-2)
+    {
+      echo $tmp[$i];
+    } else {
+           if (trim($tmp[$i]) <> '')
+              {
+                $savestr .= $tmp[$i]."\r\n";
+              }
+
+           }
+
+ }
+
+$fp = fopen("/tmp/kkk.jpg","w");
+fwrite($fp,$savestr);
+fclose($fp);
 ?>
 """
 # -- /
@@ -27,10 +60,9 @@ url = "http://graph.cloudiya.com/wye.php"
 
 crl = pycurl.Curl()
 
-#values = [("image",(pycurl.FORM_FILE,"/var/data/github/BootStrap/html/tmp.jpg"))]
+values = [("image",(pycurl.FORM_FILE,"/var/data/github/BootStrap/html/tmp.jpg"))]
 #values = [("image",(pycurl.FORM_FILE,"/var/data/github/BootStrap/html/tmp.png"))]
 #values = [("html",(pycurl.FORM_FILE,"/var/data/github/BootStrap/html/demo1.html"))]
-values = [("name","jilly"),("age","10")]
 
 crl.setopt(pycurl.VERBOSE,1)
 crl.setopt(pycurl.CONNECTTIMEOUT,60)
@@ -51,18 +83,7 @@ crl.perform()
 
 print(crl.fp.getvalue()) 
 
-#respose data show 
-"""
-------------------------------965ac8803e38
-Content-Disposition: form-data; name="name"
 
-jilly
-------------------------------965ac8803e38
-Content-Disposition: form-data; name="age"
-
-10
-------------------------------965ac8803e38--
-"""
 
 
 

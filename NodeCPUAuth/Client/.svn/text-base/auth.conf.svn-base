@@ -1,0 +1,13 @@
+[cpuauth]
+
+cpuauthprikeyfile = etc/workspace-control/auth/CA-privatekey.pem
+cpuauthrepubkeyfile = etc/workspace-control/auth/CAR-publickey.pem
+cpuauthreprikeyfile = etc/workspace-control/auth/CAR-privatekey.pem
+cpuauthrefile = etc/workspace-control/auth/cpuauth.re
+
+[ws]
+
+wshostname = c12.cloudiya.com
+wsport = 8443
+
+
