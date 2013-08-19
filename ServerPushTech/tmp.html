@@ -1,0 +1,28 @@
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script>
+var randomnum = getRandom(999);
+
+$(document).ready(function(){
+           
+           $("#show").text(randomnum);
+           
+           $("#show1").click(function(){
+                    $("#show2").text(randomnum)
+           });
+           
+           
+})
+function getRandom(n){return Math.floor(Math.random()*n+1)}
+
+</script>
+</head>
+
+<body>
+<pre id="show"></pre>
+<pre id="show2"></pre>
+<button type="btn" id="show1">button</button>
+
+</body>
+</html>

@@ -1,0 +1,168 @@
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script>
+
+//生成随机数
+var randomnum = getRandom(999);
+
+$(document).ready(function(){ 
+
+            // 点击刷新CDN按钮动作
+            $("#FlushCDN").click(function(){
+                             $("#ShowCDN").slideDown("slow");
+                             $("#ShowSquid").slideUp("slow");
+                             
+                             var textarea_array = ($("#urls").val()).split("\n");
+                             var urlstype = $('input[name="urlstype"]').filter(":checked").val();
+                             $.getJSON("http://192.168.0.111:8087/flushcdn?format=json&jsoncallback=?","urls="+textarea_array+"&urlstype="+urlstype,function(data,status){
+                                   
+                                   if (data.head == "fail")
+                                      {
+                                         alert(data.body);
+                                      }
+                                   else
+                                      {
+                                         Flushing(); 
+                                      }
+                                       
+                             });
+            });
+            
+            //点击刷新squid按钮动作
+            $("#FlushSquid").click(function(){
+                               $("#ShowSquid").slideDown("slow");
+                               $("#ShowCDN").slideUp("slow");
+                               
+                               //传递url给后端shell脚本执行刷新squid
+                               var textarea_array = ($("#urls").val()).split("\n");
+                               var urlstype = $('input[name="urlstype"]').filter(":checked").val();
+                               $.getJSON("http://127.0.0.1:8080/flushsquid?format=json&jsoncallback=?","urls="+textarea_array+"&urlstype="+urlstype+"&key="+randomnum,function(data,status){
+                                     if (data.success == "1")
+                                          {
+                                               
+                                              //脚本已开始执行,调用函数写终端输出到前端页面
+                                              WriteStdoutToFront();
+                                          }    
+                                      else
+                                          {
+                                              //脚本执行错误,弹出错误信息.
+                                              alert(data.text);
+                                          }
+                               });
+            });
+            
+});
+
+//---------------
+function Flushing(){
+         $("#FlushingDiv table tbody").html(function(i,origHtml){
+                  return "<tr><td>1</td><td>2</td><td>3</td></tr>" + origHtml;
+         });
+}
+
+//写终端输出到前端页面
+function WriteStdoutToFront(){
+		  $.ajax({
+		          type:"GET",
+		          dataType:"jsonp",
+		          url:"http://127.0.0.1:8080/getstdout?jsoncallback=?",
+		          timeout:80000,   //ajax请求超时80秒
+		          //data:{time:"80"}, //40秒后无论结果服务器都返回数据
+		          data:{key:randomnum},
+		          success:function(data,textStatus) {
+		                    //从服务器得到数据，显示数据并继续查询.
+		                   if (data.success == '1'){
+		                             $("#ShowSquid pre").append("<br>"+data.text);
+		                             WriteStdoutToFront();
+		                    }
+		                    
+		                    //未从服务器得到数据,继续查询.
+		                   if (data.success == "0") {
+		                             $("#ShowSquid pre").append("<br>[NO DATA]");
+		                             //WriteStdoutToFront();
+		                    }
+		                    
+		          },
+		          
+		          //Ajax请求超时,继续查询.
+		          error:function(XMLHttpRequest,textStatus,errorThrown) {
+		                      if (textStatus == "timeout") {
+		                              $("#ShowSquid pre").append("<br>[TIMEOUT]");
+		                              //WriteStdoutToFront();
+		                      }
+		          },
+		   });
+}
+
+//随机数函数
+function getRandom(n){return Math.floor(Math.random()*n+1)}
+
+</script>
+
+
+<style type="text/css">
+p.title
+{
+  font-size:90%;
+}
+div.panel
+{
+  margin:0px;
+  padding:5px;
+  text-align:left;
+  background:#e5eecc;
+  border:solid 1px #c3c3c3;
+  height:auto;
+  width:auto;
+  display:none;
+}
+
+div.panel textarea
+{
+   background:#e5eecc;
+   border:solid 0px #c3c3c3;
+}
+</style>
+
+
+</head>
+<body>
+
+<input type="radio" name="urlstype" value=0 checked> File
+<input type="radio" name="urlstype" value=1> Dir </br>
+
+<textarea id="urls" rows="10" cols="100"></textarea> </br>
+
+<button id="FlushSquid" type="button" data-toggle="modal" data-target="#myModal">FlushSquid</button>
+<button id="FlushCDN" type="button">FlushCDN</button>
+
+<div id="ShowSquid"  class="panel" >
+<pre></pre>
+</div>
+
+<div id="ShowCDN"  class="panel">
+<p class="title">Flushing</p>
+<hr width=150 size=2 align=left noshade>
+<div id="FlushingDiv">
+<table border="1">
+<tbody>
+<tr>
+  <td>100</td>
+  <td>200</td>
+  <td>300</td>
+</tr>
+<tr>
+  <td>400</td>
+  <td>500</td>
+  <td>600</td>
+</tr>
+</tbody>
+</table>
+<div>
+
+<p class="title">Wait To Flush</p>
+<hr width=150 size=2 align=left noshade>
+</div>
+</body>
+</html>

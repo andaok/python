@@ -42,13 +42,13 @@ class PSACB:
 ##################################
 if __name__ == "__main__":
 
-    #XMLRPCExample()
-    #PyroExample()
+    XMLRPCExample()
+    PyroExample()
     
     
     cb = PSACB()
     
-    
+     
     print "PYRO SECTION"
     print "*"*20
     psapyro = Pyro.core.getProxyForURI("PYROLOC://127.0.0.1:7766/psaexample")
