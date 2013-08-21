@@ -1,8 +1,12 @@
 <html>
 <head>
+<link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/bootstrap-responsive.min.css" rel="stylesheet">
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
 <script>
 var randomnum = getRandom(999);
+function getRandom(n){return Math.floor(Math.random()*n+1)}
 
 $(document).ready(function(){
            
@@ -12,17 +16,43 @@ $(document).ready(function(){
                     $("#show2").text(randomnum)
            });
            
-           
-})
-function getRandom(n){return Math.floor(Math.random()*n+1)}
+           $("tr#check").click(function(){
+                    alert($(this).attr("val"));
+                    alert($(this).find("#xiha").text());
+                    $(this).find("#haxi").text("uiygrtf");
+           });
+   
+});
+
+
+
 
 </script>
 </head>
 
 <body>
-<pre id="show"></pre>
-<pre id="show2"></pre>
-<button type="btn" id="show1">button</button>
-
+<div>
+<div>
+<table class="table table-condensed table-bordered">
+<thead>
+<tr>1</tr>
+<tr>2</tr>
+<tr>3</tr>
+</thead>
+<tbody>
+<tr id="check" val="123" class="info">
+<td id="xiha">one1</td>
+<td id="haxi">two</td>
+<td><a href="#">flush</a></td>
+</tr>
+<tr id="check" val="234">
+<td id="xiha">one2</td>
+<td id="haxi">two</td>
+<td>three</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </body>
 </html>

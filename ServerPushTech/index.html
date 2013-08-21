@@ -1,47 +1,131 @@
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Bootstrap Demo</title>
+
+<link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/bootstrap-responsive.min.css" rel="stylesheet">
+
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
-<script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/CacheFlush.js"></script>
 
-$(function(){
-   
-            $("#btn").bind("click",{btn:$("#btn")},function(evdata){
-                                   $.ajax({
-                                          type:"GET",
-                                          dataType:"jsonp",
-                                          url:"http://127.0.0.1:8080/flush?jsoncallback=?",
-                                          timeout:80000,   //ajax请求超时80秒
-                                          //data:{time:"80"}, //40秒后无论结果服务器都返回数据
-                                          success:function(data,textStatus) {
-                                                    //从服务器得到数据，显示数据并继续查询.
-                                                   if (data.success == '1'){
-                                                             $("#msg").append("<br>[HAVE DATA]"+data.text);
-                                                             //evdata.data.btn.click();
-                                                    }
-                                                    
-                                                    //未从服务器得到数据,继续查询.
-                                                   // if (data.success == "0") {
-                                                      //        $("#msg").append("<br>[NO DATA]");
-                                                      //        evdata.data.btn.click();
-                                                    //}
-                                                    
-                                          },
-                                          
-                                          //Ajax请求超时,继续查询.
-                                          error:function(XMLHttpRequest,textStatus,errorThrown) {
-                                                      if (textStatus == "timeout") {
-                                                              $("#msg").append("<br>[TIMEOUT]");
-                                                              evdata.data.btn.click();
-                                                      }
-                                          },
-                                   });
-            });
-});
+<style type="text/css">
 
-</script>
+h1, h2, h3, .masthead p, .subhead p, .marketing h2, .lead {font-family: "Helvetica Neue",Helvetica,Arial,"Microsoft Yahei UI","Microsoft YaHei",SimHei,"宋体",simsun,sans-serif;font-weight: normal;}
+.leftdiv{
+	background-color: #FFFFFF;
+    width: 20%;	
+	float: left;
+	height: 600px;
+	border-radius: 3px 3px 3px 3px;
+}
+.rightdiv{
+	margin-left: 2.5%;
+    width: 77.5%;
+	float: left;
+	background-color: #FFFFFF;
+	height: 600px;
+	border-radius: 3px 3px 3px 3px;
+}
+
+div.panel{
+    margin:0px;
+    padding:0px;
+    text-align:left;
+    height:auto;
+    width:auto;
+}
+
+div#ShowSquid,div#CacheFlushingDiv
+{
+    display:none;
+}
+
+</style>
 </head>
-<body>
-<div id="msg"></div>
-<input id="btn" type="button" value="test" />
+
+<body style="margin:20px 20px 20px 20px;">
+	
+    <div class="container-fluid">
+    	<div class="row-fluid">
+    		<div class="span2 leftdiv">
+    		    
+    			<!--Sidebar content-->
+    			   
+    			   <div style="max-width: 340px; padding: 8px 0pt;" class="well">
+			             <ul class="nav nav-list">
+			                <li class="nav-header">Cache Flush</li>
+			                <li class="divider"></li>
+			                <li><a id="CacheFlushNav" href="#">Cache Flush</a></li>
+			                <li><a id="CacheFlushingNav" href="#">Cache Flushing</a></li>
+			                <li><a href="#">Wait Flush</a></li>
+			                <li class="divider"></li>
+			                <li><a href="#">Help</a></li>
+			              </ul>
+                   </div>
+    		</div>
+    		
+    		<div class="span10 rightdiv">
+    		<!--Body content-->
+    		   <div style="max-width: 600px; padding: 8px 0pt;" class="well">
+    		   
+                     <!-- Cache Flush Div -->
+                     <div id="CacheFlushDiv">
+                     <div>
+                                <!-- radio inline -->
+								<form>
+								<div class="form-inline">
+								<div class="controls-row">
+								        <label class="radio inline">
+								            <input type="radio" name="urlstype" value=0 checked/>File
+								        </label>
+								        <label class="radio inline">
+								            <input type="radio" name="urlstype" value=1 />Dir
+								        </label>
+								</div>
+								</div>
+								</form>
+			                 
+		                     <textarea id="urls" rows="10" class="input-block-level" style="margin:0;padding:0;"></textarea> <br/>
+		                     <button id="FlushSquid" type="button" class="btn btn-primary">FlushSquid</button>
+		                     <button id="FlushCDN" type="button" class="btn btn-primary" >FlushCDN</button>
+		                 
+                     </div>
+                     
+                     <!-- Squid Output Show -->
+                     <div id="ShowSquid"  class="panel">
+                        <pre></pre>
+                     </div>
+                     
+                     </div>
+                     
+                     <!-- Cache Flushing Div -->
+                     <div id="CacheFlushingDiv" class="panel">
+                     
+                           <table class="table table-condensed table-bordered">
+				           <thead>
+				            <tr>
+				            <td>ID</td>
+				            <td>URL</td>
+				            <td>STATUS</td>
+				            <td>ACTION</td>
+				            </tr>
+				           </thead>
+				           <tbody>
+				           </tbody>             
+                           </table>
+                     
+                     <div>
+                     
+                     <!-- Wait Flush Div -->
+                          
+    		   </div>
+    		
+    		</div>
+    	</div>
+    </div>
+    
 </body>
 </html>

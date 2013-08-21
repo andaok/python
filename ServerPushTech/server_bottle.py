@@ -77,10 +77,29 @@ def flushcdn():
     
     return request.query.jsoncallback + "(" + ujson.encode(receive_data_dict) + ")"
 
+
 @route('/flushinglist',method='GET')
 def flushinglist():
     rid_url_pairs_dict = redata.hgetall("CacheFlushingHT")
     return request.query.jsoncallback + "(" + ujson.encode(rid_url_pairs_dict) + ")"
+
+
+@route('/check',method="GET")
+def check():
+    RawRids = request.query.rids
+    RidsList = RawRids.split(",")
+    
+    rids = ""
+    for rid in RidsList:
+        rids = rids + rid + "|"
+    
+    rids = rids[:-1] 
+    
+    receive_data_dict = CacheFlush.Check(rids)
+    
+    return request.query.jsoncallback + "(" + ujson.encode(receive_data_dict) + ")"
+    
+    
     
 debug(True)    
 run(host="0.0.0.0",port=8080)

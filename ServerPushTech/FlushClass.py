@@ -74,7 +74,7 @@ class CDNFlush():
         resp_data_json = self.SendPost(self.check_api_interface,params)
         resp_data_dict = ujson.decode(resp_data_json)
         
-        #print(resp_data_json)
+        print(resp_data_json)
         return resp_data_dict     
                 
 
@@ -88,8 +88,8 @@ if __name__ == "__main__":
     #rtype = 0
     
     FlushObj = CDNFlush()
-    FlushObj.Flush(urls,rtype)
-    #FlushObj.Check("9631212")
+    #FlushObj.Flush(urls,rtype)
+    FlushObj.Check("9816589")
 
 
 
