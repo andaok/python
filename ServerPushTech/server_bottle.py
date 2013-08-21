@@ -64,25 +64,30 @@ def flushcdn():
     
     urls = urls[:-1] 
     
+    print("urls is : %s"%urls)
+    
     receive_data_dict = CacheFlush.Flush(urls,urlstype)
     
-    rid_url_pairs_dict = {}
+    timestamp = int(time.time())
+    
     if receive_data_dict["head"] == "success":
+        redpipe = redata.pipeline()
+        
         url_rid_pairs_list = receive_data_dict["body"]
         for item in url_rid_pairs_list:
-                 for url,rid in item.items():
-                     rid_url_pairs_dict[rid] = url
-       
-        redata.hmset("CacheFlushingHT",rid_url_pairs_dict)
+            for url,rid in item.items():
+                redpipe.zadd("CacheFlushingZSet",ujson.encode({rid:url}),timestamp)
+                      
+        redpipe.execute()
     
     return request.query.jsoncallback + "(" + ujson.encode(receive_data_dict) + ")"
 
 
 @route('/flushinglist',method='GET')
 def flushinglist():
-    rid_url_pairs_dict = redata.hgetall("CacheFlushingHT")
+    rid_url_pairs_dict = redata.zrange("CacheFlushingZSet",0,-1)
+    print(ujson.encode(rid_url_pairs_dict))
     return request.query.jsoncallback + "(" + ujson.encode(rid_url_pairs_dict) + ")"
-
 
 @route('/check',method="GET")
 def check():
@@ -96,6 +101,8 @@ def check():
     rids = rids[:-1] 
     
     receive_data_dict = CacheFlush.Check(rids)
+    
+    print(rids)
     
     return request.query.jsoncallback + "(" + ujson.encode(receive_data_dict) + ")"
     

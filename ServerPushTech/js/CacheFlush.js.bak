@@ -7,7 +7,7 @@ $(document).ready(function(){
             //---------------------------------------------------------------
             FlushingList();
             //---------------------------------------------------------------
-            
+
             //点击刷新CDN按钮动作
             // ----------------------------------------------------------------
             $("#FlushCDN").click(function(){
@@ -23,7 +23,6 @@ $(document).ready(function(){
                                       {
                                          $("#CacheFlushDiv").hide();
                                          $("#CacheFlushingDiv").show();
-                                         
                                          var DataArray = eval(data.body);
                                          for (i in DataArray)
                                            {
@@ -82,96 +81,22 @@ $(document).ready(function(){
             
             //点击check按钮
             //-------------------------------------------------------------------------
-            $("tr#check").live("click",function(){
-                                  var rid  = $(this).attr("val");
-                                  $.getJSON("http://127.0.0.1:8080/check?format=json&jsoncallback=?","rids="+rid,function(data,status){
-                                           if (data.head == "fail")
-                                              {
-                                                 alert(data.body);
-                                              }
-                                           else
-                                              {
-                                                 var DataArray = eval(data.body);
-                                                 for (i in DataArray)
-                                                    {
-                                                       var rid = DataArray[i]["rid"];
-                                                       var status = DataArray[i]["status"];
-                                                       var endtime = DataArray[i]["endtime"];
-                                                       
-                                                       if (status == "ok")
-                                                          {
-                                                             $("tr[val="+rid+"]").attr("class","success");
-                                                             $("tr[val="+rid+"]").find("#status").text(endtime);
-                                                          }
-                                                    }                                                  
-                                              }          
-                                  });
+            $("tr#check").click(function(){
+                                  alert("hello");
+                                 // var rid  = $(this).attr("val");
+                                 // $.getJSON("http://127.0.0.1:8080/check?format=json&jsoncallback=?","rids="+rid,function(data,status){
+                                 //             alert(data);
+                                 // });
             });
             //-------------------------------------------------------------------------
-            
-            //点击定时刷新开按钮
-            $("#IntChkOn").click(function(){
-            
-                           //开启定时刷新
-						   IntChkObj=setInterval("BatchCheck()",1000);
-						   $(this).attr('disabled',"true");
-						   $("#IntChkOff").removeAttr("disabled");
-
-            });
-            
-            //点击定时刷新关按钮
-            $("#IntChkOff").click(function(){
-               
-                           //开闭定时刷新
-                           clearInterval(IntChkObj);
-						   $(this).attr('disabled',"true");                          
-                           $("#IntChkOn").removeAttr("disabled");
-            });
                         
 });
-
-//批量检查刷新结果
-//--------------------------------------------------------
-function BatchCheck(){
-          var rids = "";
-          
-          $("tr#check").each(function(){
-                  rid = $(this).attr("val");
-                  rids += rid+",";  
-          });
-          
-          rids = rids.substr(0,rids.length-1);
-          
-	      $.getJSON("http://127.0.0.1:8080/check?format=json&jsoncallback=?","rids="+rids,function(data,status){
-	               if (data.head == "fail")
-	                  {
-	                     alert(data.body);
-	                  }
-	               else
-	                  {
-	                     var DataArray = eval(data.body);
-	                     for (i in DataArray)
-	                        {
-	                           var rid = DataArray[i]["rid"];
-	                           var status = DataArray[i]["status"];
-	                           var endtime = DataArray[i]["endtime"];
-	                           
-	                           if (status == "ok")
-	                              {
-	                                 $("tr[val="+rid+"]").attr("class","success");
-	                                 $("tr[val="+rid+"]").find("#status").text(endtime);
-	                              }
-	                        }                                                  
-	                  }          
-	      });	      
-}
-//--------------------------------------------------------
 
 //显示正在刷新的URL
 //---------------------------------------------------------
 function WriteFlushingTable(url,id){
          $("#CacheFlushingDiv table tbody").html(function(i,origHtml){
-                  return "<tr class='error' id='check' val="+id+"><td>"+id+"</td><td>"+url+"</td><td id='status'>Running</td><td><a  href='#' >Check</a></td></tr>" + origHtml;
+                  return "<tr  id='check' val="+id+"><td>"+id+"</td><td>"+url+"</td><td id='status'>Running</td><td><a  href='#' >Check</a></td></tr>" + origHtml;
          });
 }
 //----------------------------------------------------------
@@ -179,13 +104,10 @@ function WriteFlushingTable(url,id){
 //列正在刷新表
 //----------------------------------------------------------
 function FlushingList(){
-         $.getJSON("http://127.0.0.1:8080/flushinglist?format=json&jsoncallback=?",function(data,status){                      
-                      $.each(data,function(id,value){
-                      	valuejson = eval('('+value+')'); 
-                        $.each(valuejson,function(id,url){
-                             WriteFlushingTable(url,id); 
-                         });                      	
-                      });                     
+         $.getJSON("http://127.0.0.1:8080/flushinglist?format=json&jsoncallback=?",function(data,status){
+                  $.each(data,function(id,url){
+                         WriteFlushingTable(url,id);
+                  });
          });
 }
 //----------------------------------------------------------

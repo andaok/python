@@ -11,6 +11,12 @@
 <script src="js/bootstrap.min.js"></script>
 <script src="js/CacheFlush.js"></script>
 
+<script>
+$(document).ready(function(){
+    //$("#xiha").hide();
+})
+</script>
+
 <style type="text/css">
 
 h1, h2, h3, .masthead p, .subhead p, .marketing h2, .lead {font-family: "Helvetica Neue",Helvetica,Arial,"Microsoft Yahei UI","Microsoft YaHei",SimHei,"宋体",simsun,sans-serif;font-weight: normal;}
@@ -23,7 +29,16 @@ h1, h2, h3, .masthead p, .subhead p, .marketing h2, .lead {font-family: "Helveti
 }
 .rightdiv{
 	margin-left: 2.5%;
-    width: 77.5%;
+    width: 44.5%;
+	float: left;
+	background-color: #FFFFFF;
+	height: 600px;
+	border-radius: 3px 3px 3px 3px;
+}
+
+.testdiv{
+	margin-left: 0;
+    width: 33.5%;
 	float: left;
 	background-color: #FFFFFF;
 	height: 600px;
@@ -49,7 +64,9 @@ div#ShowSquid,div#CacheFlushingDiv
 <body style="margin:20px 20px 20px 20px;">
 	
     <div class="container-fluid">
+    
     	<div class="row-fluid">
+    	
     		<div class="span2 leftdiv">
     		    
     			<!--Sidebar content-->
@@ -71,7 +88,7 @@ div#ShowSquid,div#CacheFlushingDiv
                    </div>
     		</div>
     		
-    		<div class="span4 -offset2 rightdiv">
+    		<div id="xiha" class="span4 -offset2 rightdiv">
     		<!--Body content-->
     		   <div style="max-width: 600px; padding: 8px 0pt;" class="well">
     		   
@@ -125,20 +142,28 @@ div#ShowSquid,div#CacheFlushingDiv
                      <div>
                      <!-- Cache Flushing Div End -->
                      
+    		         <!-- Wait Flush Div -->
+    		         <div id="WaitFlushDiv" class="panel">
 
+    		         </div>
+    		         <!-- Wait Flush Div End -->
                           
     		   </div>
     		</div>
-    		    		
+    		    	
+
     	</div>
+ 
     </div>
-                     <!-- Wait Flush Div -->
-    		    	 <div class="span4 rightdiv">
+    
+        	      		    	<!-- test -->
+    		    	<div class="span4 testdiv">
     		    	    <div style="max-width: 600px; padding: 8px 0pt;" class="well">
+    		    	    <pre>12345zxcxzccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc</pre>
     		    	    <textarea id="urls" rows="10" class="input-block-level" style="margin:0;padding:0;"></textarea> <br/>
     		    	    </div>
-    		    	 </div>
-    		         <!-- Wait Flush Div End -->
+    		    	</div>
+    		    	<!-- test -->	
     
 </body>
 </html>

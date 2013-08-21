@@ -2,7 +2,7 @@
 <head>
 <link href="css/bootstrap.min.css" rel="stylesheet">
 <link href="css/bootstrap-responsive.min.css" rel="stylesheet">
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="js/jquery.min.js"></script>
 <script src="js/bootstrap.min.js"></script>
 <script>
 var randomnum = getRandom(999);
@@ -20,6 +20,11 @@ $(document).ready(function(){
                     alert($(this).attr("val"));
                     alert($(this).find("#xiha").text());
                     $(this).find("#haxi").text("uiygrtf");
+           });
+           
+           var rid='8976_pic';
+           $("a[id="+rid+"]").click(function(){
+                 alert("hahahah");
            });
    
 });
@@ -52,6 +57,8 @@ $(document).ready(function(){
 </tr>
 </tbody>
 </table>
+
+<a id="8976_pic" href="#">click me</a>
 </div>
 </div>
 </body>
