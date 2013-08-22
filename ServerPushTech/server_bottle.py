@@ -64,8 +64,6 @@ def flushcdn():
     
     urls = urls[:-1] 
     
-    print("urls is : %s"%urls)
-    
     receive_data_dict = CacheFlush.Flush(urls,urlstype)
     
     timestamp = int(time.time())
@@ -89,6 +87,7 @@ def flushinglist():
     print(ujson.encode(rid_url_pairs_dict))
     return request.query.jsoncallback + "(" + ujson.encode(rid_url_pairs_dict) + ")"
 
+
 @route('/check',method="GET")
 def check():
     RawRids = request.query.rids
@@ -106,6 +105,19 @@ def check():
     
     return request.query.jsoncallback + "(" + ujson.encode(receive_data_dict) + ")"
     
+    
+@route('/waitflushlist',method="GET") 
+def waitflushlist():
+    start_position = int(request.query.sp)
+    per_page_num = int(request.query.ppn)
+    end_position = start_position + per_page_num - 1
+    wait_flush_url_len = redata.llen("cacheurl_list")    
+    wait_flush_url_list = redata.lrange("cacheurl_list",start_position,end_position)
+    
+    wait_flush_data_dict = {"urlsum":wait_flush_url_len,"urlsdata":wait_flush_url_list}
+    
+    print(ujson.encode(wait_flush_data_dict))
+    return request.query.jsoncallback + "(" + ujson.encode(wait_flush_data_dict) + ")"
     
     
 debug(True)    

@@ -151,15 +151,19 @@ div#ShowSquid,div#CacheFlushingDiv
 						           <tbody>
 						           </tbody>             
 		                           </table>
-		                           
-		                     <button id="WaitFlushSquid" type="button" class="btn btn-primary btn-small">FlushSquid</button>
-		                     <button id="WaitFlushCDN" type="button" class="btn btn-primary btn-small" >FlushCDN</button>
-		                     <button id="PrePage" type="button" class="btn btn-primary btn-small" >PrePage</button>
-		                     <button id="NextPage" type="button" class="btn btn-primary btn-small" >NextPage</button>
-		                     <p id="PositionVal" val="0"></p>
 		                     
-		                     </div>
+		                     <div>
 		                     <!-- Wait Flush Div End -->
+		                     <!-- Pagination Div Start -->
+		                     <div id="PaginationDiv" class="panel">
+		                           <table class="table table-condensed table-bordered" style="margin:0;padding:0;">
+						           <tbody>
+						            <tr>
+						            </tr>
+						           </tbody>          
+		                           </table>
+		                     </div>
+		                     <!-- Pagination Div End -->
     		    	    </div>
                    </div>
                    </div>
