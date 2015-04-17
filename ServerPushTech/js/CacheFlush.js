@@ -1,9 +1,3 @@
-//全局变量
-var UrlPrefix = "http://video.skygrande.com/static";
-var PerPageNum = 20;
-
-WaitFlushList(0);
-
 //生成随机数
 var randomnum = getRandom(999);
 
@@ -115,22 +109,6 @@ $(document).ready(function(){
             });
             //-------------------------------------------------------------------------
             
-            //点击待刷新url列表下刷新CDN按钮
-            //-------------------------------------------------------------------------
-            $("#WaitFlushCDN").click(function(){
-                               tmpurls = "";
-                               $("input#WaitFlushUrl").filter("[checked]").each(function(){
-                                             tmpstr = UrlPrefix + $(this).attr("value");
-                                             tmpurls = tmpurls + tmpstr + ","
-                               });
-                               
-                               tmpurls = tmpurls.substr(0,tmpurls.length-1);
-                               urlstype = $('input[name="urlstype"]').filter(":checked").val();
-                               FlushCDN(tmpurls,urlstype);
-
-            });
-            //-------------------------------------------------------------------------
-            
             //点击定时刷新开按钮
             $("#IntChkOn").click(function(){
             
@@ -149,51 +127,8 @@ $(document).ready(function(){
 						   $(this).attr('disabled',"true");                          
                            $("#IntChkOn").removeAttr("disabled");
             });
-            
-            //点击等待刷新列表下一页按钮
-            $("#NextPage").click(function(){
-                 SP = $("#PositionVal").attr("val");
-                 SP = new Number(SP);
-                 SP = SP + PerPageNum;
-                 WaitFlushList(SP);
-            });
-            
-            //点击等待刷新列表上一页按钮
-            $("#PrePage").click(function(){
-                 SP = $("#PositionVal").attr("val");
-                 SP = new Number(SP);
-                 SP = SP - PerPageNum;
-                 WaitFlushList(SP);
-            });
-            
                         
 });
-
-//刷新CDN
-function FlushCDN(urls,urlstype){
-             $.getJSON("http://127.0.0.1:8080/flushcdn?format=json&jsoncallback=?","urls="+urls+"&urlstype="+urlstype,function(data,status){
-                   
-                   if (data.head == "fail")
-                      {
-                         alert(data.body);
-                      }
-                   else
-                      {
-                         $("#CacheFlushDiv").hide();
-                         $("#CacheFlushingDiv").show();
-                         
-                         var DataArray = eval(data.body);
-                         for (i in DataArray)
-                           {
-                              $.each(DataArray[i],function(url,id){
-                                    WriteFlushingTable(url,id);
-                              });
- 
-                           } 
-                      }
-                       
-             });
-}
 
 //批量检查刷新结果
 //--------------------------------------------------------
@@ -202,8 +137,7 @@ function BatchCheck(){
           
           $("tr#check").each(function(){
                   rid = $(this).attr("val");
-                  //rids += rid+",";
-                  rids = rids + rid + ",";  
+                  rids += rid+",";  
           });
           
           rids = rids.substr(0,rids.length-1);
@@ -253,62 +187,6 @@ function FlushingList(){
                          });                      	
                       });                     
          });
-}
-//----------------------------------------------------------
-
-
-//列待刷新表
-//----------------------------------------------------------
-function WaitFlushList(StartPosition){
-         
-         $("#WaitFlushDiv table tbody").html("");
-         
-         $.getJSON("http://127.0.0.1:8080/waitflushlist?format=json&jsoncallback=?","ppn="+PerPageNum+"&sp="+StartPosition,function(data,status){         
-                      urls = data.urlsdata;
-                      //本次取回的url数目 
-                      UrlsNum = urls.length;
-                      //后端保存的url总数目
-                      UrlSum = data.urlsum;
-                      
-                      if (StartPosition+PerPageNum > UrlSum)
-                         {
-                            //禁用下一页按钮
-                           $("#NextPage").attr('disabled',"true");
-						   
-                         }
-                      else
-                         {
-                            //启用下一页按钮
-                            $("#NextPage").removeAttr("disabled");
-                         }
-                         
-                     if (StartPosition-PerPageNum < 0)
-                         {
-                            //禁用上一页按钮
-                            $("#PrePage").attr('disabled',"true");
-                         }
-                      else
-                         {
-                            //启用上一页按钮
-                            $("#PrePage").removeAttr("disabled");
-                         }
-                      
-                      for (i in urls)
-                         {
-                             i = UrlsNum-1-i;
-                             id = i + StartPosition;
-                             url = urls[i];
-                             
-					         $("#WaitFlushDiv table tbody").html(function(n,origHtml){
-					                  return "<tr class='error'><td><label class='checkbox'><input id='WaitFlushUrl' type='checkbox' value="+url+"></label></td><td>"+id+"</td><td>"+UrlPrefix+url+"</td></tr>"+origHtml;
-					         });
-                         }
-                                                             
-         });
-         
-         //重置页面开始位置值
-         $("#PositionVal").attr("val",StartPosition);
-         
 }
 //----------------------------------------------------------
 

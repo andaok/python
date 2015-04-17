@@ -109,14 +109,13 @@ div#ShowSquid,div#CacheFlushingDiv
                      <!-- Cache Flushing Div -->
                      <div id="CacheFlushingDiv" class="panel">
                      
-                           <table class="table table-condensed table-bordered" style="margin:0;padding:0;">
-                           <caption align="center"> FLUSHING URLS</caption>
+                           <table class="table table-condensed table-bordered">
 				           <thead>
 				            <tr>
-				            <td>RID</td>
+				            <td>ID</td>
 				            <td>URL</td>
 				            <td>STATUS</td>
-				            <td><i class="icon-refresh"></i></td>
+				            <td>ACTION</td>
 				            </tr>
 				           </thead>
 				           <tbody>
@@ -136,33 +135,9 @@ div#ShowSquid,div#CacheFlushingDiv
                      <!-- Wait Flush Div -->
     		    	 <div class="span4 rightdiv">
     		    	    <div style="max-width: 600px; padding: 8px 0pt;" class="well">
-		                     <!-- Wait Flush Div -->
-		                     <div id="WaitFlushDiv" class="panel">
-		                     
-		                           <table class="table table-condensed table-bordered" style="margin:0;padding:0;">
-		                           <caption align="center"> WAIT FLUSH URLS</caption>
-						           <thead>
-						            <tr>
-						            <td><i class="icon-check"></i></td>
-						            <td>ID</td>
-						            <td>URL</td>
-						            </tr>
-						           </thead>
-						           <tbody>
-						           </tbody>             
-		                           </table>
-		                           
-		                     <button id="WaitFlushSquid" type="button" class="btn btn-primary btn-small">FlushSquid</button>
-		                     <button id="WaitFlushCDN" type="button" class="btn btn-primary btn-small" >FlushCDN</button>
-		                     <button id="PrePage" type="button" class="btn btn-primary btn-small" >PrePage</button>
-		                     <button id="NextPage" type="button" class="btn btn-primary btn-small" >NextPage</button>
-		                     <p id="PositionVal" val="0"></p>
-		                     
-		                     </div>
-		                     <!-- Wait Flush Div End -->
+    		    	    <textarea id="urls" rows="10" class="input-block-level" style="margin:0;padding:0;"></textarea> <br/>
     		    	    </div>
-                   </div>
-                   </div>
+    		    	 </div>
     		         <!-- Wait Flush Div End -->
     
 </body>
