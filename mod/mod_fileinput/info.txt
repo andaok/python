@@ -1,0 +1,4 @@
+xiaguang  vp-cakuba-003.ticp.net  12
+luobeibo  vp-cakuba-006.ticp.net  14
+qicaihong vp-cakuba-004.ticp.net  15
+qicaihong vp-cakuba-005.ticp.net  19
