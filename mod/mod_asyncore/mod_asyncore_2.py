@@ -1,5 +1,6 @@
 # -*- encoding:utf-8 -*-
 
+# ------------------------------------------
 # The example below illustrates using asyncore on the server by re-implementing the EchoServer from the SocketServer examples. 
 # There are three classes: EchoServer receives incoming connections from clients and creates EchoHandler instances to deal with each. 
 # The EchoClient is an asyncore dispatcher similar to the HttpClient defined above.
@@ -8,6 +9,10 @@
 # a new socket is established. Rather than try to dispatch to individual clients within EchoServer, 
 # an EchoHandler is created to take advantage of the socket map maintained by asyncore.
 
+# In this example the server, handler, and client objects are all being maintained in the same socket map by asyncore in a single process. 
+# To separate the server from the client, simply instantiate them from separate scripts and run asyncore.loop() in both. When a dispatcher is closed, 
+# it is removed from the map maintained by asyncore and the loop exits when the map is empty.
+# ------------------------------------------
 
 import asyncore
 import logging
