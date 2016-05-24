@@ -1,0 +1,7 @@
+# ---------------------------
+#  FOR RFID ATTENDANCE
+# ---------------------------
+
+/usr/bin/nohup /usr/bin/python  /var/software/KaoQinRFID/ServerSide_RFID.py  >> /var/log/ServerSide_RFID.log 2>&1  &
+/usr/bin/nohup /usr/bin/python  /var/software/KaoQinRFID/Admin_RFID.py >> /var/log/AdminSide_RFID.log 2>&1 &
+
