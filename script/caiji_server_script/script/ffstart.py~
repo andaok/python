@@ -84,12 +84,12 @@ class SendMail(threading.Thread):
         self.subject = subject
         self.text = text
         
-        self.FromAddr = "test@skygrande.com"
+        self.FromAddr = "support@skygrande.com"
         self.SmtpServer = "smtp.exmail.qq.com"
-        self.user = "test@skygrande.com"
-        self.pwd = "test"
+        self.user = "support@skygrande.com"
+        self.pwd = "1qaz2wsx`"
         self.ToAddr = "wye@skygrande.com"
-        self.MailFlag = "采集主进程"
+        self.MailFlag = "微童年采集主进程"
         
         threading.Thread.__init__(self)
     
