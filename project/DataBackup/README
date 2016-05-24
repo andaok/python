@@ -1,0 +1,59 @@
+
+
+备份脚本功能描述
+
+= 目的 =
+
+   备份各类数据
+   数据源 ： 文件，文件夹 ， mysql , mongodb
+   数据存储所在 ：  HDFS
+
+
+= 实现 =
+== 备份设置文档  ==
+
+     备份脚本运行在有备份任务的各服务器上，管理员通过设置“备份设置文档”进行备份设置
+
+    “备份设置文档”格式如下：
+     **************************
+    #全局参数
+     [global_info]
+     #服务器信息，需保持唯一，建议设置为该服务器IP地址。 
+     hostname = HostIP
+     #保存天数
+     savedays = 7 (默认7天)
+     
+    #文件备份计划模块     
+     [备份计划名称]                             # 备份计划名称，在本设置文档内不得重复。             
+     type = "file"                              # 指定备份类型
+     path = path                                # 需备份数据路径，备份类型是mysql,mongodb的不需指定  
+     
+    #文件夹备份计划模块
+     [备份计划名称] 
+     type = "dir"
+     path = path 
+     exceptsuffix = .log;.txt                   #这些后缀的文件不备份
+     exceptdir = dir1;dir2                      #这些目录不备份
+     exceptfile = file1;file2 
+
+    #mysql备份计划模块
+    [备份计划名称] 
+    type = "mysql"            
+    dbhost = dbhost                             #mysql主机
+    dbuser = username                           #mysql用户
+    dbpasswd = password                         #mysql密码
+    dbname = name1;name2                        #需备份的数据库名称
+    
+    #mongodb备份
+    [备份计划名称]
+    type = "mongodb"
+    dbhost = dbhost                            #mongodb主机
+    dbuser = username                          #mongodb用户，可为空.
+    dbpasswd = password                        #mongodb密码，可为空.
+    dbname = name1;name2                       #需备份的数据库的名称.
+    
+== 程序流程 ==
+
+     检查“设置文档”语法  - >  载入设置到程序  ->  顺序执行备份计划 
+
+     ->  备份完成  ->  删除本地临时文件  ->  删除已过保存日期的备份
