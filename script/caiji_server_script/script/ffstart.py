@@ -1,0 +1,915 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+
+# ------------------------------------------------ /
+# Purpose:
+#       Control camera script for start up ffmpeg process
+#+      and monitor ffmpeg process 
+# @author:wye
+# @date:20141020
+# @achieve basic functions
+# @date:20150424
+# @Improve send mail function,The same message is sent only once.
+# @date:20150903
+# @Delete useless ts file for free disk space.
+# @date:20151003
+# @Improved camera monitoring mechanism
+# @date:20151025
+# @Send camera online state data to zabbix
+#
+# @date:20151126
+# @ Add option "-use_wallclock_as_timestamps 1" in ffmpeg
+# @   to better sync video with audio
+#
+# @date:20151206
+# @Determine whether the camera is live by the camera heartbeat 
+# + packet and Multiple ways to determine the caiji address
+#
+# @date:20151208
+# @ revise option "-acodec libfaac -b:a 20k" in ffmpeg
+# @   to improve the compatibility with various cameras
+#
+# @date:20151208
+# @For not the heartbeat of the package of the camera,take screenshot monitoring.
+# @date:20151213
+# @With the camera bind to rfid attendance machine ,do not remove the useless ts file.
+# @date:20160321
+# @Add audio noise reduction 
+# ------------------------------------------------ /
+
+import os
+import re
+import sys
+import time
+import redis
+import ujson
+import socket
+import logging
+import MySQLdb
+import httplib
+import datetime
+import subprocess
+import logging.handlers
+import smtplib
+import threading
+from zabbix_api import ZabbixAPI
+from email.header import Header
+from email.mime.text import MIMEText
+
+
+# --------------------------- /
+# LOG MODULE
+# --------------------------- /
+def GetLog(logflag,loglevel="debug"):
+    logger = logging.Logger(logflag)
+    logfile = "/var/log/%s.log"%logflag
+    hdlr = logging.handlers.RotatingFileHandler(logfile, maxBytes = 5*1024*1024, backupCount = 5)
+    formatter = logging.Formatter("%(asctime)s -- [ %(name)s ] -- %(levelname)s -- %(message)s")
+    hdlr.setFormatter(formatter)
+    logger.addHandler(hdlr)    
+    if loglevel == "debug": 
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+    return logger
+
+
+# --------------------------- /
+# SEND MAIL MODULE
+# --------------------------- /
+class SendMail(threading.Thread):
+    
+    def __init__(self,logger,subject,text):
+        self.logger = logger
+        self.subject = subject
+        self.text = text
+        
+        self.FromAddr = "support@skygrande.com"
+        self.SmtpServer = "smtp.exmail.qq.com"
+        self.user = "support@skygrande.com"
+        self.pwd = "1qaz2wsx`"
+        self.ToAddr = "wye@skygrande.com"
+        self.MailFlag = "微童年采集主进程"
+        
+        threading.Thread.__init__(self)
+    
+    def run(self): 
+        Mail_list = {"server":self.SmtpServer,
+                     "fromAddr": "%s <%s>"%(Header(self.MailFlag,"utf-8"),self.FromAddr),
+                     "user":self.user,
+                     "passwd":self.pwd}
+                          
+        msg = MIMEText(self.text,_charset="utf-8")
+        msg["Subject"] = self.subject
+        msg["From"] = Mail_list["fromAddr"]
+        msg["To"] = self.ToAddr
+        try:
+            send_smtp = smtplib.SMTP()
+            send_smtp.connect(Mail_list["server"])
+            send_smtp.login(Mail_list["user"],Mail_list["passwd"])
+            send_smtp.sendmail(Mail_list["fromAddr"],self.ToAddr,msg.as_string())
+            send_smtp.close()
+            return True
+        except Exception,e:
+            self.logger.error("Send mail to %s fail,Error info : %s "%(self.ToAddr,e))
+
+
+# --------------------------------- /
+# EXECUTE SHELL COMMANDS MODULE
+# --------------------------------- /
+class execCmd():
+    
+    """EXECUTE SHELL COMMAND CORE CLASS"""
+    
+    def __init__(self,cmd,killsig=9,killtime=10):
+        
+        """
+        killsig , default is unset
+        killtime, default is unset 
+        """
+
+        self.cmd = cmd
+        self.killsig = killsig
+        self.killtime = killtime
+        self.exception = None
+        self.exit = None
+        self.stdout = None
+        self.stderr = None
+        self.status = None
+    
+    def exeCmd(self,StdoutFlag):
+
+        """
+        exeCmd(StdoutFlag) -> no return
+        Execute shell command ,Format stdout by the argument(read | readlines).
+        """
+                
+        cmdobj = subprocess.Popen(self.cmd,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE)
+        
+        done = False
+        while not done and self.killtime > 0:
+            time.sleep(0.2)
+            if cmdobj.poll():
+                done = True
+            self.killtime -=0.2
+        
+        if not done and self.killsig != -1:
+            try:
+                os.kill(cmdobj.pid, self.killsig)
+            except OSError,e:
+                self.exception = e
+        
+        status = cmdobj.wait()
+        self.status = status
+        
+        if os.WIFSIGNALED(status):
+            self.exit = "SIGNAL: " + str(os.WTERMSIG(status))
+        elif os.WIFEXITED(status):
+            self.exit = str(os.WEXITSTATUS(status))
+        else:
+            self.exit = "UNKNOWN"
+        
+        self.stderr = cmdobj.stderr.read()
+        if StdoutFlag == "read":
+            self.stdout = cmdobj.stdout.read()
+        else:
+            self.stdout = cmdobj.stdout.readlines()
+        
+        cmdobj.stderr.close()
+
+
+class runCmd():
+
+    """Execute shell command interface"""
+
+    def __init__(self):
+        self.stdout = None
+        self.status = None
+        self.stderr = None
+        self.exit = None
+    
+    def run(self,cmd,StdoutFlag="read"):
+
+        """
+        run(cmdlist,StdoutFlag="read")  ->  status(int),exit(int),stdout(str|list),stderr(str)
+        Execute shell command by argument and return status , exit , stdout , stderr.
+        StdoutFlag="readlines" , return stdout Format is line list.
+        StdoutFlag="read" , return stdout Format is string.
+        """
+
+        CmdObj = execCmd(cmd)
+        CmdObj.exeCmd(StdoutFlag)
+        return CmdObj.status , CmdObj.exit , CmdObj.stdout , CmdObj.stderr
+
+
+
+
+# -------------------------------  /
+#
+#         MAIN PROGRAM 
+# 
+# -------------------------------  /
+
+class ffstart():
+    
+    def __init__(self,cid,logger):
+        
+        self.cid = cid
+        self.logger = logger
+        
+        self.RedisServer = "10.2.10.19"
+        self.RedisPort = 6379
+        self.RedisDB = 0
+                
+        self.MysqlServer = "10.2.10.12"
+        self.MysqlUser = "cloudiya"
+        self.MysqlPasswd = "c10udiya"
+        self.MysqlDB = "weitongnian" 
+
+        self.KQJ_Card_Api_Server = "59.175.153.69"
+        self.KQJ_Card_Api_Port = 9090      
+        
+        self.DataRootDir = "/Data"
+        self.FFMPEG = "/usr/local/bin/ffmpeg"
+        self.FFMPEG2 = "/usr/local/bin/ffmpeg.2.2.1"
+        self.CamStaKeyName = "%s_status"%cid
+
+        self.Threshold = 5
+        self.CidRestartNum = {}
+                
+        self.LivePlanRawData = None
+        
+        self.M3u8ModTime = None
+        
+        self.TimeStampNow = None
+        self.date = None
+        self.weekday = None
+        
+        self.unit_code = None
+        self.router_addr = None
+        self.router_port = None
+        self.router_addr_db = None
+        self.caiji_addr = None
+
+        self.MailStatusFlag = None
+
+        self.KQJIdNum = None
+
+        self.cam_monitor_way = None
+        self.cam_bind_kaoqin = None  
+
+
+    def IsSendMail(self,status):
+
+        """
+        Whether to send mail depending on ffmpeg Gather Stream status and Previously Whether send mail
+        @ Add in 2015-04-24 
+        """
+
+        cid = self.cid
+        if status == "error":
+            if self.MailStatusFlag == None or self.MailStatusFlag == True:
+                MailObj = SendMail(self.logger,"FFmpeg Gather Stream Exception",cid)
+                MailObj.start()
+                self.MailStatusFlag = False
+        else:
+            if self.MailStatusFlag == False:
+                MailObj = SendMail(self.logger,"FFmpeg Gather Stream Back To Normal",cid)
+                MailObj.start()
+                self.MailStatusFlag = True
+
+
+    def IsOverFFRestartNum(self):
+        cid = self.cid
+        if self.CidRestartNum.has_key(cid):
+            if self.CidRestartNum[cid] >= self.Threshold:
+                self.IsSendMail("error")
+                self.CidRestartNum[cid] = 0
+            else:
+                self.CidRestartNum[cid] = self.CidRestartNum[cid] + 1
+        else:
+            self.CidRestartNum[cid] = 1
+    
+
+    def ClearFFRestartNum(self):
+        cid = self.cid
+        self.CidRestartNum[cid] = 0 
+
+                     
+    def GetCidLivePlan(self):
+        try:
+            RedisPool = redis.ConnectionPool(host=self.RedisServer,port=self.RedisPort,db=self.RedisDB)
+            Redata = redis.Redis(connection_pool=RedisPool)
+            LivePlanRawData = Redata.get("%s_live_minute"%self.cid)
+            if LivePlanRawData == None:
+                self.logger.error("No find related key in redis pool for %s live plan,Program quit"%self.cid)
+                sys.exit()
+            else:
+                self.LivePlanRawData = LivePlanRawData
+        except Exception,e:
+            self.logger.error("Obtain %s live plan exception from redis pool,Error is %s,Program quit"%(self.cid,e))
+            sys.exit()
+    
+    def GetCidVodPlan(self):
+        try:
+            RedisPool = redis.ConnectionPool(host=self.RedisServer,port=self.RedisPort,db=self.RedisDB)
+            Redata = redis.Redis(connection_pool=RedisPool)
+            VodPlanRawData = Redata.get("%s_vod"%self.cid)
+            self.VodPlanRawData = VodPlanRawData
+        except Exception,e:
+            self.logger.error("Obtain %s vod plan exception from redis pool,Error is %s ,Program quit"%(self.cid,e))
+            sys.exit()
+
+    def GetCidMonWay(self):
+        try:
+            RedisPool = redis.ConnectionPool(host=self.RedisServer,port=self.RedisPort,db=self.RedisDB)
+            Redata = redis.Redis(connection_pool=RedisPool)
+            MonWayValue = Redata.get("%s_monitor_way"%self.cid)
+            if MonWayValue == None:
+                self.cam_monitor_way = None
+            else:
+                self.cam_monitor_way = int(MonWayValue)
+        except Exception,e:
+            self.cam_monitor_way = None
+
+    def GetCidIsBindKQ(self):
+        try:
+            RedisPool = redis.ConnectionPool(host=self.RedisServer,port=self.RedisPort,db=self.RedisDB)
+            Redata = redis.Redis(connection_pool=RedisPool)
+            Value = Redata.get("%s_bind_kaoqin"%self.cid)
+            if Value == None:
+                self.cam_bind_kaoqin = None
+            else:
+                self.cam_bind_kaoqin = int(Value)
+        except Exception,e:
+            self.cam_bind_kaoqin = None
+
+    def UpdateCidStaInfo(self,key,value):
+        try:
+            RedisPool = redis.ConnectionPool(host=self.RedisServer,port=self.RedisPort,db=self.RedisDB)
+            Redata = redis.Redis(connection_pool=RedisPool)
+            Redata.hmset(key,value)
+        except Exception,e:
+            self.logger.error("Update camera status info exception,But Program Not Quit,Error Info : %s"%e)
+            pass
+
+    def GetFieldValue(self,key,field):
+        try:
+            RedisPool = redis.ConnectionPool(host=self.RedisServer,port=self.RedisPort,db=self.RedisDB)
+            Redata = redis.Redis(connection_pool=RedisPool)
+            FieldValue = Redata.hget(key,field)
+            return FieldValue            
+        except Exception,e:
+            self.logger.error("Get Field value fail from camera status info key,Error Info : %s"%e)
+            return None
+
+    def DelField(self,key,field,CamLastStaValue):
+        if CamLastStaValue != None and CamLastStaValue != 0:
+            try:
+                RedisPool = redis.ConnectionPool(host=self.RedisServer,port=self.RedisPort,db=self.RedisDB)
+                Redata = redis.Redis(connection_pool=RedisPool)
+                Redata.hdel(key,field)           
+            except Exception,e:
+                self.logger.error("Del Field fail from camera status info key,Error Info : %s"%e)
+                pass
+
+    def WriteCidToDownCamSet(self,CamLastStaValue):
+        NowTimestamp = int(time.time())
+        #为避免无意义多次操作redis，限定操作条件.
+        if CamLastStaValue != None and CamLastStaValue != 0 and 5*60 <=  NowTimestamp - int(CamLastStaValue)  <= 10*60:
+            try:
+                RedisPool = redis.ConnectionPool(host=self.RedisServer,port=self.RedisPort,db=self.RedisDB)
+                Redata = redis.Redis(connection_pool=RedisPool)
+                Redata.zadd("DownCamSet",self.cid,int(CamLastStaValue))          
+            except Exception,e:
+                self.logger.error("Write cid to camera down set fail,Error Info : %s"%e)
+                pass
+
+    def DelCidFromDownCamSet(self,CamLastStaValue):
+        #为避免无意义多次操作redis，限定操作条件.
+        if CamLastStaValue != None and int(CamLastStaValue) != 0:
+            try:
+                    RedisPool = redis.ConnectionPool(host=self.RedisServer,port=self.RedisPort,db=self.RedisDB)
+                    Redata = redis.Redis(connection_pool=RedisPool)
+                    Redata.zrem("DownCamSet",self.cid)          
+            except Exception,e:
+                self.logger.error("Del cid from camera down set fail,Error Info : %s"%e)
+                pass
+
+    def GetWanIPFromKQJAPI(self,KQJIdNum):
+        #后期会有两类考勤方式，一种是刷卡式，一种是感应式,现只有刷卡式。
+        httpClient = None
+        try:
+            httpClient = httplib.HTTPConnection(self.KQJ_Card_Api_Server,self.KQJ_Card_Api_Port,timeout=2)
+            httpClient.request('GET', '/attendance/api?cmd=cmd_svr_device_online')
+            response = httpClient.getresponse()
+            if response.status == 200:
+                info_dict = eval(response.read())
+                if int(info_dict['status']) == 1 and info_dict['message'] == "ACK_SUCCESS":
+                    for tmpdict in info_dict['data']:
+                        if tmpdict["deviceId"] == KQJIdNum:
+                            return tmpdict["ip"]
+                else:
+                    return None
+            else:
+                return None
+        except Exception,e:
+            self.logger.error("Get Wan Ip fail from kqj api,Error info : %s"%e)
+            return None
+        finally:
+            if httpClient:
+                httpClient.close()
+
+
+    def GetCidBaseInfo(self):
+        #  ---------------------------- /
+        #  从MYSQL数据库获取和摄像头绑定的路由地址，路由端口和采集地址
+        # ----------------------------- /
+        try:
+            DBConn = MySQLdb.connect(host=self.MysqlServer,user=self.MysqlUser,passwd=self.MysqlPasswd)
+            DBCursor = DBConn.cursor()
+            DBConn.select_db(self.MysqlDB)        
+            SqlResultNum = DBCursor.execute('select unit_code,router_addr,router_port,caiji_addr,voice_state from t_device where index_code=%s',(self.cid))
+            if SqlResultNum == 0 or SqlResultNum == None:
+                self.logger.error("No find related record in t_device for cid %s,Program quit"%self.cid)
+                sys.exit()
+            else:            
+                SqlResultVal = DBCursor.fetchone()
+                DBConn.commit()
+                self.unit_code = SqlResultVal[0]
+                self.router_addr = SqlResultVal[1]
+                self.router_addr_db = self.router_addr
+                self.router_port = SqlResultVal[2]
+                self.caiji_addr = SqlResultVal[3]
+                self.voice_state = int(SqlResultVal[4])
+        except Exception,e:
+            self.logger.error("Obtain cid base info fail!!!")
+            sys.exit()
+        finally:
+            DBConn.close()
+            DBCursor.close()  
+
+    def GetKQJIdNum(self):
+        # --------------------------- /
+        # 从mysql数据库获取考勤机设备ID号
+        # --------------------------  /   
+        try:
+            DBConn = MySQLdb.connect(host=self.MysqlServer,user=self.MysqlUser,passwd=self.MysqlPasswd)
+            DBCursor = DBConn.cursor()
+            DBConn.select_db(self.MysqlDB)  
+            SqlResultNum = DBCursor.execute('select serial_id from b_z_attendance_device where unit_code=%s',(self.unit_code))            
+            if SqlResultNum == 0 or SqlResultNum == None:
+                self.KQJIdNum = None
+            else:
+                SqlResultVal = DBCursor.fetchone()
+                DBConn.commit()
+                self.KQJIdNum = SqlResultVal[0]
+        except Exception,e:
+            self.logger.error("Obtain KaoQinJi ID Num fail,But Program not quit")
+            pass
+        finally:
+            DBConn.close()
+            DBCursor.close()
+
+    def UpdateCidStatus(self):
+        try:
+            DBConn = MySQLdb.connect(host=self.MysqlServer,user=self.MysqlUser,passwd=self.MysqlPasswd)
+            DBCursor = DBConn.cursor()
+            DBConn.select_db(self.MysqlDB)          
+            sql = 'update t_device set status=1 where index_code=%s'
+            paras = (self.cid)
+            DBCursor.execute(sql,paras)
+            DBConn.commit()          
+        except Exception,e:
+            self.logger.error("Fatal Error,Connect to mysql exception for update cid status : %s,Error is : %s"%(self.cid,e))
+            sys.exit()
+        finally:
+            DBConn.close()
+            DBCursor.close()                    
+    
+    def IsExistFFmpeg(self):
+        ptmp = subprocess.Popen("/bin/ps -aux | grep %s | grep -v grep | grep ffmpeg | wc -l"%self.cid,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        FFmpegNum = int(ptmp.stdout.read())
+        if FFmpegNum == 1:
+            return True
+        elif FFmpegNum > 1:
+            self.logger.error("Fatal Error,Have many ffmpeg process,Kill the processes")
+            self.FFmpegKill()
+            return False            
+        else:
+            return False
+    
+    def IsZeroPoint(self):
+        PreDate = (datetime.datetime.strptime(self.date,"%Y%m%d") - datetime.timedelta(days=1)).strftime("%Y%m%d")
+        YmdHMSTime_ZeroPointTime = PreDate + " " + "23:59:59"
+        TimeStamp_ZeroPointTime = int(time.mktime(time.strptime(YmdHMSTime_ZeroPointTime, "%Y%m%d %H:%M:%S")))
+        if 0 < self.TimeStampNow - TimeStamp_ZeroPointTime < 60:
+            return True
+        else:
+            return False
+            
+    def IsInLiveTimeForHour(self):
+        pass
+                
+    def IsInLiveTimeForMinute(self):
+        TimeStampNow = self.TimeStampNow
+        date = self.date
+        weekday = self.weekday
+        LivePlanDict = ujson.decode(self.LivePlanRawData)
+        if LivePlanDict.has_key(weekday) == True:
+            LivePlanWdayStr = LivePlanDict[weekday]
+            LivePlanWdayList = LivePlanWdayStr.strip("{").strip("}").split(",")
+            for live in LivePlanWdayList:
+                LiveStartTime = live.split("-")[0]
+                LiveEndTime = live.split("-")[1]
+                #规范直播时段开始与结束时间
+                LiveStartTime = LiveStartTime + ":00"
+                LiveEndTime = LiveEndTime + ":00"
+                if LiveEndTime == "24:00:00":LiveEndTime = "23:59:59"
+                #获取直播时段开始与结束时间戳
+                YmdHMSTime_LiveStartTime = date + " " + LiveStartTime
+                YmdHMSTime_LiveEndTime = date + " " + LiveEndTime
+                TimeStamp_LiveStartTime = int(time.mktime(time.strptime(YmdHMSTime_LiveStartTime, "%Y%m%d %H:%M:%S"))) - 60
+                TimeStamp_LiveEndTime = int(time.mktime(time.strptime(YmdHMSTime_LiveEndTime, "%Y%m%d %H:%M:%S")))   
+                if TimeStamp_LiveStartTime <= TimeStampNow <= TimeStamp_LiveEndTime:     
+                    return True
+            return False
+        else:
+            return False
+    
+    def IsInVodTimeForMinute(self,TsName):
+        weekday = self.weekday
+        date = self.date
+        
+        SerialNum_Ts = int(TsName.split(".")[0][8:])
+        YmdHMSTime_ZeroPointTime = date + " " + "00:00:00"
+        TimeStamp_ZeroPointTime = int(time.mktime(time.strptime(YmdHMSTime_ZeroPointTime, "%Y%m%d %H:%M:%S")))
+        
+        VodPlanDict = ujson.decode(self.VodPlanRawData)
+        if VodPlanDict.has_key(weekday) == True:
+            VodPlanWdayStr = VodPlanDict[weekday]
+            VodPlanWdayList = VodPlanWdayStr.strip("{").strip("}").split(",")
+            for vod in VodPlanWdayList:
+                VodStartTime = vod.split("-")[0] + ":00"
+                VodEndTime = vod.split("-")[1] + ":00"
+                if VodEndTime == "24:00:00":VodEndTime = "23:59:59"
+                YmdHMSTime_VodStartTime = date + " " + VodStartTime
+                YmdHMSTime_VodEndTime = date + " " + VodEndTime
+                TimeStamp_VodStartTime = int(time.mktime(time.strptime(YmdHMSTime_VodStartTime, "%Y%m%d %H:%M:%S")))
+                TimeStamp_VodEndTime = int(time.mktime(time.strptime(YmdHMSTime_VodEndTime, "%Y%m%d %H:%M:%S")))
+                SerialNum_VodStartTime = (TimeStamp_VodStartTime - TimeStamp_ZeroPointTime)/10 + 1
+                SerialNum_VodEndTime = (TimeStamp_VodEndTime - TimeStamp_ZeroPointTime)/10 + 1
+                if SerialNum_VodStartTime <= SerialNum_Ts <= SerialNum_VodEndTime:
+                    return True
+            return False
+        else:
+            return False
+                                 
+    def DelUselessTsFile(self):
+        
+        CidDataRootDir = self.DataRootDir + "/" + self.unit_code + "/" + self.cid
+        CidTsDir = CidDataRootDir + "/" + "media" + "/" + self.date
+        
+        UselessTsFileList_One = []
+        UselessTsFileList_Two = []
+        IntervalNum = 6
+        DeleteNum = 3 
+      
+        # -----------------------------
+        # 两种方式决定待删除的TS文件
+        #------------------------------
+        # 第一种方式
+        TmpData = subprocess.Popen("ls -t %s/*.ts | head -1"%CidTsDir,shell=True,stdout=subprocess.PIPE,stderr=open('/dev/null','w'))
+        try:
+            LatestTsFilePath = TmpData.stdout.readlines()[0].strip()
+            LatestTsFileName = os.path.basename(LatestTsFilePath)
+            LatestTsFileSerialNum = int(LatestTsFileName.split(".")[0][8:])
+            for i in range(DeleteNum):
+                TsFileSerialNum = LatestTsFileSerialNum - (i+IntervalNum)
+                if TsFileSerialNum > 0:
+                    UselessTsFileList_One.insert(0,"%s%05d.ts"%(self.date,TsFileSerialNum))
+            self.logger.info("The first way to be deleted ts files is : %s"%UselessTsFileList_One)
+        except IndexError:
+            pass
+        
+        # ------------------------------
+        # 删除无用的TS文件
+        # ------------------------------
+        UselessTsFileList = UselessTsFileList_One
+        
+        if len(UselessTsFileList) != 0:
+            if self.VodPlanRawData != None:
+                for ts in UselessTsFileList:
+                    if self.IsInVodTimeForMinute(ts) == True:
+                        self.logger.info("%s/%s is a part of the vod,Need to keep"%(CidTsDir,ts))
+                    else:
+                        if subprocess.call("rm  %s/%s"%(CidTsDir,ts),shell=True,stdout=open('/dev/null','w'),stderr=subprocess.STDOUT) == 0:
+                            self.logger.info("Have vod plan,Delete %s/%s success"%(CidTsDir,ts))
+                        else:
+                            self.logger.info("Have vod plan,Delete %s/%s error,File no exist or other error"%(CidTsDir,ts))              
+            else:
+                for ts in UselessTsFileList:
+                    if subprocess.call("rm  %s/%s"%(CidTsDir,ts),shell=True,stdout=open('/dev/null','w'),stderr=subprocess.STDOUT) == 0:
+                        self.logger.info("No vod plan,Delete %s/%s success"%(CidTsDir,ts))
+                    else:
+                        self.logger.info("No vod plan,Delete %s/%s error,File no exist or other error"%(CidTsDir,ts))
+        else:
+            self.logger.info("No find any ts file in %s"%CidTsDir)
+                    
+                    
+    def IsM3u8Modify(self):
+        CidDataRootDir = self.DataRootDir + "/" + self.unit_code + "/" + self.cid
+        LiveM3u8Path = CidDataRootDir + "/" + "live.m3u8"
+        
+        if os.path.isfile(LiveM3u8Path) == True:
+            cmd1str = "/bin/ls -l --time-style '+%s'"
+            cmd2 = " %s | awk  '{print $6}'"
+            cmd2str = cmd2%LiveM3u8Path
+            cmdstr = cmd1str + cmd2str
+            ptmp = subprocess.Popen(cmdstr,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            try:
+                NewM3u8ModTime = int(ptmp.stdout.read())
+                if self.M3u8ModTime != NewM3u8ModTime:
+                    self.logger.info("M3u8 file have modify,Write value to m3u8modtime parameters")
+                    self.M3u8ModTime = NewM3u8ModTime
+                    #self.IsSendMail("normal")
+                    return True
+                else:
+                    self.logger.info("M3u8 file no have modify")
+                    return False
+            except Exception,e:
+                self.logger.error("Obtain M3u8ModTime value failure,program quit")
+                sys.exit()
+        else:
+            self.logger.info("M3u8 file not exist")
+            return False
+                        
+    def FFmpegRestart(self):
+        self.FFmpegKill()
+        self.FFmpegStart()
+    
+    def FFmpegStart(self):
+
+        self.GetCaiJiAddr()
+
+        CidDataRootDir = self.DataRootDir + "/" + self.unit_code + "/" + self.cid
+        LiveM3u8Path = CidDataRootDir + "/" + "live.m3u8"
+        CidTsDir = CidDataRootDir + "/" + "media" + "/" + self.date
+        url = self.caiji_addr.replace("ipaddr",self.router_addr)
+        url = url.replace("port",str(self.router_port))
+        YmdHMSTime_ZeroPointTime = self.date + " " + "00:00:00"
+        TimeStamp_ZeroPointTime = int(time.mktime(time.strptime(YmdHMSTime_ZeroPointTime, "%Y%m%d %H:%M:%S")))
+        SegStartNum = (self.TimeStampNow - TimeStamp_ZeroPointTime)/10 + 1
+        
+        # -------------- /
+        # FFMPEG启动参数
+        # -------------- /
+        self.logger.info("FFmpeg all startup paracmeters list : \n \
+                          CidDataRootDir : %s                   \n \
+                          LiveM3u8Path : %s                     \n \
+                          CidTsDir : %s                         \n \
+                          url : %s                              \n \
+                          SegStartNum : %s                      \n \
+                        "%(CidDataRootDir,LiveM3u8Path,CidTsDir,url,SegStartNum))
+                
+        # -------------- /
+        # FFMPEG在每日零点附近重启后创建本天TS存储目录
+        # -------------- /
+        if os.path.isdir(CidTsDir) == False:
+            rcode = subprocess.call("/bin/mkdir -p %s"%CidTsDir,shell=True,stdout=open('/dev/null','w'),stderr=subprocess.STDOUT)
+            if rcode == 0:
+                self.logger.info("Create dir %s success!!!"%CidTsDir)
+            else:
+                self.logger.info("Create dir %s failure!!!"%CidTsDir)            
+        
+        # --------------- /
+        # 启动FFMPEG进程
+        # 0 -- 开启音频
+        # 1 -- 关闭音频
+        # 2 -- 开启音频且降噪
+        # --------------- /
+        if self.voice_state == 1:
+            cmd="%s -d -use_wallclock_as_timestamps 1 -f rtsp -rtsp_transport tcp -i %s -f lavfi -ar 8000 -ac 2 -f s16le -i /dev/zero -map 0:0 -map 1:0 -vcodec copy -acodec libfaac -b:a 2k -f segment -segment_time 10 -segment_list_size 2 -segment_list_entry_prefix media/%s/ -segment_list %s -segment_start_number %s -segment_list_type m3u8 -segment_format mpegts %s/%s" 
+            cmdstr = cmd%("/usr/local/bin/ffmpeg.audio",url,self.date,LiveM3u8Path,SegStartNum,CidTsDir,self.date)
+            cmdstr = cmdstr + "%05d.ts > /dev/null &"
+        elif self.voice_state == 2:
+            cmd="%s -d -use_wallclock_as_timestamps 1 -f rtsp -rtsp_transport tcp -i %s -vcodec copy -acodec libfaac -b:a 20k -af \"highpass=frequency=300,lowpass=frequency=4000,bass=frequency=300:gain=-100\"  -map 0 -f segment -segment_time 10 -segment_list_size 3 -segment_list_entry_prefix media/%s/ -segment_list %s -segment_start_number %s -segment_list_type m3u8 -segment_format mpegts %s/%s"
+            cmdstr = cmd%(self.FFMPEG2,url,self.date,LiveM3u8Path,SegStartNum,CidTsDir,self.date)
+            cmdstr = cmdstr + "%05d.ts > /dev/null &"
+        else:
+            #
+            # use "-use_wallclock_as_timestamps 1" to sync audio & video
+            #
+            # -- Xinglong
+            ##cmd="%s -d -use_wallclock_as_timestamps 1 -f rtsp -rtsp_transport tcp -i %s -c copy -map 0 -f segment -segment_time 10 -segment_list_size 3 -segment_list_entry_prefix media/%s/ -segment_list %s -segment_start_number %s -segment_list_type m3u8 -segment_format mpegts %s/%s" 
+            cmd="%s -d -use_wallclock_as_timestamps 1 -f rtsp -rtsp_transport tcp -i %s -vcodec copy -acodec libfaac -b:a 20k -map 0 -f segment -segment_time 10 -segment_list_size 3 -segment_list_entry_prefix media/%s/ -segment_list %s -segment_start_number %s -segment_list_type m3u8 -segment_format mpegts %s/%s" 
+            cmdstr = cmd%(self.FFMPEG2,url,self.date,LiveM3u8Path,SegStartNum,CidTsDir,self.date)
+            ##cmd="%s -d -f rtsp -rtsp_transport tcp -i %s -vcodec copy -acodec libfaac -b:a 15k -map 0 -f segment -segment_time 10 -segment_list_size 3 -segment_list_entry_prefix media/%s/ -segment_list %s -segment_start_number %s -segment_list_type m3u8 -segment_format mpegts %s/%s" 
+            ##cmdstr = cmd%(self.FFMPEG,url,self.date,LiveM3u8Path,SegStartNum,CidTsDir,self.date)
+            cmdstr = cmdstr + "%05d.ts > /dev/null &"
+ 
+        self.logger.info("StartUp FFmpeg Cmd : %s"%cmdstr)
+        rcode = subprocess.call(cmdstr,shell=True,stdout=open('/dev/null','w'),stderr=subprocess.STDOUT)
+        if rcode == 0:
+            self.logger.info("FFmpeg process startup success!!!")
+        else:
+            self.logger.info("FFmpeg process startup failure!!!")     
+            
+        
+        # -------------- /
+        # 写live.m3u8文件修改时间到特定参数
+        # -------------- /
+        if os.path.isfile(LiveM3u8Path) == True:
+            cmd1str = "/bin/ls -l --time-style '+%s'"
+            cmd2 = " %s | awk  '{print $6}'"
+            cmd2str = cmd2%LiveM3u8Path
+            cmdstr = cmd1str + cmd2str
+            ptmp = subprocess.Popen(cmdstr,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)            
+            try:
+                NewM3u8ModTime = int(ptmp.stdout.read())
+                self.M3u8ModTime = NewM3u8ModTime
+            except Exception,e:
+                self.logger.error("Obtain M3u8ModTime value failure,program quit,Error is %s"%e)
+                sys.exit()
+
+
+    def FFmpegKill(self):
+        rcode = subprocess.call("/bin/ps -ef | grep ffmpeg | grep %s | grep -v grep | awk '{print $2}' | xargs kill -9"%self.cid,shell=True,stdout=open('/dev/null','w'),stderr=subprocess.STDOUT)
+        if rcode == 0:
+            self.logger.info("Kill ffmpeg process success!!!")
+        else:
+            self.logger.info("Kill ffmpeg process failure!!!")
+
+
+    def GetCaiJiAddr(self):
+        # ------------------------ /
+        # 依顺序从三个方面获取采集IP地址:
+        # (1)首选是摄像头心跳包发过来的IP
+        # (2)第二是花生壳域名
+        # (3)第三是考勤机心跳包发过来的IP
+        # ------------------------ /
+
+        CamStaInfoMap = {}
+
+        camera_wan_ip = self.GetFieldValue(self.CamStaKeyName,"WanIPFromCam")
+        oray_domain_name = self.router_addr_db
+        kqj_wan_ip = self.GetWanIPFromKQJAPI(self.KQJIdNum)
+
+        try_caiji_addr = (camera_wan_ip,oray_domain_name,kqj_wan_ip)
+     
+        for addr in try_caiji_addr:
+            CheckCmdStr = "%s -y -rtsp_transport tcp -i rtsp://admin:cloudiya@%s:%s/mpeg4cif -vframes 1 -s 16x9 /tmp/%s_jietu.jpg"%(self.FFMPEG,addr,self.router_port,self.cid[::-1])
+            status,exit,stdout,stderr = self.RunCmdObj.run(CheckCmdStr)
+            if status == 0:
+                self.router_addr = addr
+                CamStaInfoMap['CaiJiAddr'] = addr
+                self.UpdateCidStaInfo(self.CamStaKeyName,CamStaInfoMap)
+                break
+
+
+    def CheckCamStatus(self):
+        # ------------------------ /
+        # 每间隔一段时间检查摄像头状态
+        # ------------------------ /
+
+        self.logger.debug("Start Check Camera Status ......")
+        CamStaInfoMap = {}
+        Field_camera_value = self.GetFieldValue(self.CamStaKeyName,"camera")
+        Field_time_value = self.GetFieldValue(self.CamStaKeyName,"time")
+        now_timestamp = int(time.time())
+
+        #默认采用监听摄像头心跳数据方式监控摄像头
+        if self.cam_monitor_way == None or self.cam_monitor_way == 0:
+            if Field_time_value != None:
+                if now_timestamp - int(Field_time_value) < 6:
+                    #摄像头在线
+                    if Field_camera_value != 0:
+                        CamStaInfoMap['camera'] = 0
+                        self.DelCidFromDownCamSet(Field_camera_value)
+                        CamStaInfoMap['reason'] = None
+                else:
+                    #摄像头不在线
+                    if Field_camera_value == None or int(Field_camera_value) == 0:
+                        CamStaInfoMap['camera'] = Field_time_value
+                    else:
+                        self.WriteCidToDownCamSet(Field_camera_value)
+                    CamStaInfoMap['time'] = now_timestamp
+            else:
+                self.logger.info("Don't Find Camera Heatbeat Data In Redis,Don't Update Camera Status Data")
+
+            #写摄像头状态信息去redis 
+            if len(CamStaInfoMap) != 0:       
+                self.UpdateCidStaInfo(self.CamStaKeyName,CamStaInfoMap)
+                self.logger.debug("Camera Check Result Is : %s "%CamStaInfoMap)
+
+
+        #采用截图方式监控摄像头
+        if self.cam_monitor_way == 1:
+            CheckCmdStr = "%s -y -rtsp_transport tcp -i rtsp://admin:cloudiya@%s:%s/mpeg4cif -vframes 1 -s 16x9 /tmp/%s_jietu.jpg"%(self.FFMPEG,self.router_addr,self.router_port,self.cid[::-1])
+            status,exit,stdout,stderr = self.RunCmdObj.run(CheckCmdStr)
+            if status == 0:
+                CamStaInfoMap['camera'] = 0
+                self.DelCidFromDownCamSet(Field_camera_value)
+                CamStaInfoMap['reason'] = None 
+            else:
+                if Field_camera_value == None or int(Field_camera_value) == 0:
+                    CamStaInfoMap['camera'] = now_timestamp
+                self.WriteCidToDownCamSet(Field_camera_value) 
+
+            #写摄像头状态信息去redis        
+            CamStaInfoMap['time'] = now_timestamp
+            self.UpdateCidStaInfo(self.CamStaKeyName,CamStaInfoMap)
+
+            self.logger.debug("Camera Check Result Is : %s "%CamStaInfoMap)           
+
+
+    def CamStaToZabbix(self):
+        Field_camera_value = self.GetFieldValue(self.CamStaKeyName,"camera")
+        if Field_camera_value != None:
+            if int(Field_camera_value) == 0:
+                self.ZabbixAPIObj.ZabbixSenderData(1)
+            else:
+                self.ZabbixAPIObj.ZabbixSenderData(0)
+ 
+    def ObjInit(self):
+        self.GetCidLivePlan()
+        self.GetCidVodPlan()
+        self.GetCidBaseInfo()
+        self.GetKQJIdNum()
+        self.GetCidMonWay()
+        self.GetCidIsBindKQ()
+
+        self.RunCmdObj = runCmd()
+        self.ZabbixAPIObj = ZabbixAPI(self.cid,self.logger)
+        self.ZabbixAPIObj.main() 
+        
+    def main(self):
+        while True:
+            self.TimeStampNow = int(time.time())
+            self.date = datetime.datetime.now().strftime("%Y%m%d")
+            self.weekday = str(time.strptime(self.date,"%Y%m%d").tm_wday+1)
+            if self.IsInLiveTimeForMinute() == True:
+                if self.cam_bind_kaoqin != 1:self.DelUselessTsFile()
+                if self.IsExistFFmpeg() == True:
+                    if self.IsZeroPoint() == True:
+                        self.logger.info("Restart ffmpeg process in zero point!!!")
+                        self.FFmpegRestart()
+                        time.sleep(30)
+                        continue
+                    if self.IsM3u8Modify() == False:
+                        self.logger.info("Restart ffmpeg process for m3u8 file is not modify")
+                        self.FFmpegRestart()
+                else:
+                    self.logger.info("Now is on live time segment,But don't find ffmpeg process,Start up it")
+                    self.FFmpegStart()                
+            else:
+                if self.IsExistFFmpeg() == True:
+                    self.logger.info("Now isn't on live time segment,But have ffmpeg process,kill it")
+                    self.FFmpegKill()
+                else:
+                    self.logger.info("Now isn't on live time segment,Nothing do") 
+
+            self.CheckCamStatus()
+            self.CamStaToZabbix()            
+            time.sleep(30)
+        
+                             
+if __name__ == "__main__":
+    if len(sys.argv) == 2 and len(sys.argv[1]) == 8:
+        cid = sys.argv[1]
+        logger = GetLog(cid)
+        FFstartObj = ffstart(cid,logger)
+        FFstartObj.ObjInit()
+        FFstartObj.UpdateCidStatus()
+        try: 
+            pid = os.fork() 
+            if pid > 0:
+                # exit first parent
+                sys.exit(0) 
+        except OSError, e: 
+            print >>sys.stderr, "fork #1 failed: %d (%s)" % (e.errno, e.strerror) 
+            sys.exit(1)
+        # decouple from parent environment
+        os.chdir("/")
+        os.setsid() 
+        os.umask(0) 
+        # do second fork
+        try: 
+            pid = os.fork() 
+            if pid > 0:
+                # exit from second parent, print eventual PID before
+                #print "Daemon PID %d" % pid 
+                sys.exit(0) 
+        except OSError, e: 
+            print >>sys.stderr, "fork #2 failed: %d (%s)" % (e.errno, e.strerror) 
+            sys.exit(1) 
+        # start the daemon main loop
+        try:
+            FFstartObj.main()
+        except Exception,e:
+            logger.error("Main Program Quit,Error is %s"%e)
+            sys.exit()
+    else:
+        print "Parameter does not meet the requirements,Program quit"
+        sys.exit()
+

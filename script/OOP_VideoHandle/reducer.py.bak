@@ -1,0 +1,229 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+
+'''
+Created on Oct 30, 2012
+
+@author: wye
+
+Copyright @ 2011 - 2012  Cloudiya Tech . Inc 
+'''
+
+"""
+合并视频段,合并视频与音频文件,截图.
+"""
+
+import os
+import sys
+import time
+import pickle
+import logging
+import baseclass
+import subprocess
+
+################################
+
+class reduceCmdOutput():
+    
+    """ Video reducer handle command output """
+    
+    def __init__(self,info_dict,hadoopinfo_dict,logger=None):
+        
+        self.VideoFileNameAlias = info_dict['name']
+        self.VideoFrameWidth = int(info_dict['width'])
+        self.VideoFrameHeight = int(info_dict['height'])
+        self.VideoFormat = info_dict['format']
+        self.SegmentNums = info_dict['segmentnums']
+        
+        if info_dict.has_key("leftpixels"):self.LeftPixels = int(info_dict['leftpixels'])
+        if info_dict.has_key("uppixels"):self.UpPixels = int(info_dict['uppixels'])
+    
+        self.HadoopNNAddr = hadoopinfo_dict["HadoopNNAddr"]
+        self.HadoopBinDir = hadoopinfo_dict["HadoopBinDir"]
+
+        self.logger = logger
+        
+        self.CmdDict = {}
+        
+        self.FFmpegTsCmdList = []
+        
+        self.FFmpegMvCmdList = []
+        
+        self.FFmpegVideoCmdList = []
+        
+        self.FFmpegScreenshotCmdList = []
+        
+        self.HadoopDownCmdList = []
+        
+        self.HadoopUploadCmdList = []
+        
+    
+    def initReducerEnv(self):
+        CmdList = ["mkdir /tmp/%s && mkdir /tmp/%s/avfiles"%(self.VideoFileNameAlias,self.VideoFileNameAlias)]
+        return CmdList
+    
+    def downMa(self):
+        CmdList = ["%s fs -get hdfs://%s/%s/avfiles/ma.%s /tmp/%s/avfiles/"%(self.HadoopBinDir,self.HadoopNNAddr,self.VideoFileNameAlias,self.VideoFormat,self.VideoFileNameAlias)]
+        return CmdList
+    
+    def downVideoSegs(self,nameflag):
+        for i in range(self.SegmentNums):
+            cmd = "%s fs -get hdfs://%s/%s/avfiles/%s.part%sv.%s /tmp/%s/avfiles/%s.part%sv.%s"
+            cmdstr = cmd%(self.HadoopBinDir,self.HadoopNNAddr,self.VideoFileNameAlias,nameflag,i+1,self.VideoFormat,self.VideoFileNameAlias,nameflag,i+1,self.VideoFormat) 
+            self.HadoopDownCmdList.append(cmdstr)
+    
+    def genMegpTs(self,nameflag):
+        for i in range(self.SegmentNums):
+            cmd = "cd /tmp/%s/avfiles/ && ffmpeg -y -i %s.part%sv.%s -an -vcodec copy -bsf h264_mp4toannexb -copyinkf %s.part%sv.megp.ts"
+            cmdstr = cmd%(self.VideoFileNameAlias,nameflag,i+1,self.VideoFormat,nameflag,i+1)
+            self.FFmpegTsCmdList.append(cmdstr)
+            
+    def megerTsSegsToMv(self,nameflag):
+        list = []
+        for i in range(self.SegmentNums):
+            obj = str("%s.part%sv.megp.ts"%(nameflag,i+1))
+            list.append(obj)
+        megerstr = '|'.join(list)
+        
+        cmd = "cd /tmp/%s/avfiles/ && ffmpeg -y -i \"concat:%s\" -vcodec copy -bsf aac_adtstoasc -copyinkf /tmp/%s/avfiles/%s.mv.%s"
+        cmdstr = cmd%(self.VideoFileNameAlias,megerstr,self.VideoFileNameAlias,nameflag,self.VideoFormat)
+        self.FFmpegMvCmdList.append(cmdstr)
+        
+    def combineMvAndMa(self,nameflag):
+        cmd = "cd /tmp/%s/avfiles/ && ffmpeg -y -i ma.%s -i %s.mv.%s -acodec copy -vcodec copy -copyinkf /tmp/%s/%s.%s"
+        cmdstr = cmd%(self.VideoFileNameAlias,self.VideoFormat,nameflag,self.VideoFormat,self.VideoFileNameAlias,nameflag,self.VideoFormat)
+        self.FFmpegVideoCmdList.append(cmdstr)
+        
+    def screenShot(self,nameflag):
+        cmd = "cd /tmp/%s/ && ffmpeg -ss 00:04:00 -i %s.%s -vframes 1 %s.preview.png"
+        cmdstr = cmd%(self.VideoFileNameAlias,nameflag,self.VideoFormat,nameflag)
+        self.FFmpegScreenshotCmdList.append(cmdstr)
+
+    def uploadVideo(self,nameflag):
+        cmd = "%s fs -put /tmp/%s/%s.*  hdfs://%s/%s/"
+        cmdstr = cmd%(self.HadoopBinDir,self.VideoFileNameAlias,nameflag,self.HadoopNNAddr,self.VideoFileNameAlias)
+        self.HadoopUploadCmdList.append(cmdstr)
+    
+    def main(self,nameflag):
+        
+        #下载视频段
+        self.downVideoSegs(nameflag)
+        
+        #生成megp.ts文件
+        self.genMegpTs(nameflag)
+        
+        #聚合megp.ts文件为mv文件
+        self.megerTsSegsToMv(nameflag)
+        
+        #合并ma和mv成视频文件
+        self.combineMvAndMa(nameflag)
+        
+        #截图
+        self.screenShot(nameflag)
+        
+        #上传视频文件
+        self.uploadVideo(nameflag)
+                
+    def complexHandle(self):
+        if self.LeftPixels:
+            if self.VideoFrameHeight <= 360:
+                self.main("360p")
+                
+            if 360 < self.VideoFrameHeight <= 480 :
+                self.main("360p")
+                self.main("480p")
+
+            if 480 < self.VideoFrameHeight <= 720 :
+                self.main("360p")
+                self.main("480p")
+                self.main("720p")
+                
+            if self.VideoFrameHeight > 720:
+                self.main("360p")
+                self.main("480p")
+                self.main("720p")
+
+        else:
+            if 360 < self.VideoFrameHeight <= 480 :
+                self.main("360p")
+        
+            if 480 < self.VideoFrameHeight <= 720 :
+                self.main("360p")
+                self.main("480p")
+        
+            if self.VideoFrameHeight > 720:
+                self.main("360p")
+                self.main("480p")
+        
+        self.CmdDict["download"] = self.HadoopDownCmdList
+        self.CmdDict["ts"] = self.FFmpegTsCmdList
+        self.CmdDict["mv"] = self.FFmpegMvCmdList
+        self.CmdDict["video"] = self.FFmpegVideoCmdList
+        self.CmdDict["screenshot"] = self.FFmpegScreenshotCmdList
+        self.CmdDict["upload"] = self.HadoopUploadCmdList
+    
+        return self.CmdDict
+
+#################################
+
+if __name__ == "__main__":
+    
+    logger = baseclass.getlog("reducer")
+    
+    try:
+        logger.info("Start reducer.....")
+        
+        #视频元数据
+        info_dict = pickle.load(open('video.info','r'))
+
+        #hadoop信息
+        hadoopinfo_dict = pickle.load(open('hadoop.info','r'))
+        
+    except Exception,e:
+        
+        logger.error("reducer init exception: %s"%e)
+        sys.exit()
+
+    logger = baseclass.getlog(info_dict['name'],loglevel=info_dict['loglevel'])  
+    
+    try:
+        RunCmdObj = baseclass.runCmd(logger)
+        
+        VideoObj = reduceCmdOutput(info_dict,hadoopinfo_dict)
+        
+        RunCmdObj.run(VideoObj.initReducerEnv(),QuitFlag=False)
+        
+        RunCmdObj.run(VideoObj.downMa(),QuitFlag=False)
+        
+        cmddict = VideoObj.complexHandle()
+        
+        RunCmdObj.run(cmddict["download"],QuitFlag=False)
+        
+        RunCmdObj.run(cmddict["ts"])
+        
+        RunCmdObj.run(cmddict["mv"])
+        
+        RunCmdObj.run(cmddict["video"])
+        
+        RunCmdObj.run(cmddict["screenshot"])
+        
+        RunCmdObj.run(cmddict["upload"])
+        
+    except Exception,e:  
+        
+        logger.error("reducer handle exception : %s"%e) 
+        sys.exit()    
+     
+        
+    #清理临时文件
+    """
+    RunCmdObj.run(["rm -rf /tmp/%s/"%(info_dict['name'])], logger,QuitFlag=False)
+    
+    RunCmdObj.run(["%s fs -rmr hdfs://%s/%s/avfiles"%(hadoopinfo_dict["HadoopBinDir"],hadoopinfo_dict["HadoopNNAddr"],info_dict['name'])], logger)
+    
+    RunCmdObj.run(["%s fs -rmr hdfs://%s/%s/inputfiles"%(hadoopinfo_dict["HadoopBinDir"],hadoopinfo_dict["HadoopNNAddr"],info_dict['name'])], logger)
+    """
+    
+    logger.info("reducer handle video file complete!")
+
+
