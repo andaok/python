@@ -1,0 +1,665 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+
+'''
+Created on Oct 30, 2012
+
+@author: wye
+
+Copyright @ 2011 - 2012  Cloudiya Tech . Inc 
+'''
+
+"""
+合并视频段,合并视频与音频文件,截图.
+"""
+
+import os
+import sys
+import time
+import pickle
+import logging
+import operator
+import baseclass
+import subprocess
+import json
+import redis
+import datetime
+
+################################
+
+class reduceCmdOutput():
+    
+    """ Video reducer handle command output """
+    
+    def __init__(self,info_dict,hadoopinfo_dict,logger=None):
+        
+        self.VideoFileNameAlias = info_dict['name']
+        self.VideoFrameWidth = int(info_dict['width'])
+        self.VideoFrameHeight = int(info_dict['height'])
+        self.VideoBitRate = int(info_dict['vbitrate'])
+        self.AudioBitRate = int(info_dict['abitrate']) 
+        self.VideoDuration = int(info_dict['duration']) 
+        self.BitRate = int(info_dict['vbitrate']) + int(info_dict['abitrate'])       
+        self.VideoFormat = "mp4"
+        self.SegmentNums = info_dict['segmentnums']
+        self.IsOverWrite = info_dict['isoverwrite']
+        self.IsWaterMark = info_dict['iswatermark']            
+        if info_dict.has_key("leftpixels"):self.LeftPixels = int(info_dict['leftpixels'])
+        if info_dict.has_key("uppixels"):self.UpPixels = int(info_dict['uppixels'])
+   	if info_dict.has_key("logoextname"):self.logoname = "logo." + info_dict['logoextname'] 
+        self.HadoopNNAddr = hadoopinfo_dict["HadoopNNAddr"]
+        self.HadoopSNNAddr = hadoopinfo_dict["HadoopSNNAddr"]
+        self.HadoopBinDir = hadoopinfo_dict["HadoopBinDir"]
+
+        self.logger = logger
+        
+        self.ClosestOriginalFileFlag = None
+        
+        self.CmdDict = {}
+        
+        self.FFmpegTsCmdList = []
+        
+        self.FFmpegMvCmdList = []
+        
+        self.FFmpegVideoCmdList = []
+        
+        self.FFmpegScreenshotCmdList = []
+        
+        self.HadoopDownCmdList = []
+        
+        self.HadoopUploadCmdList = []
+        
+        self.FFmpegGenM3u8CmdList = []
+        
+        self.GenPlaylistCmdList = []
+                
+        self.CalBitRate = []
+        
+        self.RenameCmdList = []
+        
+        self.GenPrevFileCmdList = []
+        
+        self.TrimM3u8FileCmdList = []
+        
+        self.OptimalSegTime = None
+        
+        self.TrimM3u8Flag = False
+    
+    def chkVideoBitRate(self):
+        
+        if self.VideoFrameHeight <= 300:
+            if self.VideoBitRate > int(self.VideoFrameHeight*250/240):
+                ##self.VideoBitRate240P = int(self.VideoFrameHeight*150/240)
+                ## 考虑视频转码的误差，一般是10%
+                self.VideoBitRate240P = 280;
+            else:
+                self.VideoBitRate240P = self.VideoBitRate
+        
+        if 300 < self.VideoFrameHeight <= 420:
+            if self.VideoBitRate > int(self.VideoFrameHeight*400/360):
+                ##self.VideoBitRate360P = int(self.VideoFrameHeight*256/360)
+                self.VideoBitRate360P = 450;
+            else:
+                self.VideoBitRate360P = self.VideoBitRate
+                
+            self.VideoBitRate240P = int(240*self.VideoBitRate360P/self.VideoFrameHeight)
+            
+        if 420 < self.VideoFrameHeight <= 600:
+            if self.VideoBitRate > int(self.VideoFrameHeight*750/480):
+                ##self.VideoBitRate480P = int(self.VideoFrameHeight*512/480)
+                self.VideoBitRate480P = 850;
+            else:
+                self.VideoBitRate480P = self.VideoBitRate
+                
+            self.VideoBitRate360P = int(360*self.VideoBitRate480P/self.VideoFrameHeight)
+            self.VideoBitRate240P = int(240*self.VideoBitRate480P/self.VideoFrameHeight)
+        
+        if 600 < self.VideoFrameHeight <= 1000:
+            if self.VideoBitRate > int(self.VideoFrameHeight*1500/720):
+                ##self.VideoBitRate720P = int(self.VideoFrameHeight*1500/720)
+                self.VideoBitRate720P = 1700;
+            else:
+                self.VideoBitRate720P = self.VideoBitRate
+            
+            self.VideoBitRate480P = int(480*self.VideoBitRate720P/self.VideoFrameHeight)    
+            self.VideoBitRate360P = int(360*self.VideoBitRate720P/self.VideoFrameHeight)
+            self.VideoBitRate240P = int(240*self.VideoBitRate720P/self.VideoFrameHeight)
+        
+        if self.VideoFrameHeight > 1000:
+            if self.VideoBitRate > int(self.VideoFrameHeight*2000/1080):
+                ##self.VideoBitRate1080P = int(self.VideoFrameHeight*2000/1080)
+                self.VideoBitRate1080P = 2300;
+            else:
+                self.VideoBitRate1080P = self.VideoBitRate
+            
+            self.VideoBitRate720P = int(720*self.VideoBitRate1080P/self.VideoFrameHeight)    
+            self.VideoBitRate480P = int(480*self.VideoBitRate1080P/self.VideoFrameHeight)    
+            self.VideoBitRate360P = int(360*self.VideoBitRate1080P/self.VideoFrameHeight)
+            self.VideoBitRate240P = int(240*self.VideoBitRate1080P/self.VideoFrameHeight)
+    
+    def getNewFrameWidth(self,NewFrameHeight):
+        newwidth = int(self.VideoFrameWidth*int(NewFrameHeight)/self.VideoFrameHeight)
+        if operator.mod(newwidth, 2) == 0:
+            return newwidth
+        else:
+            return newwidth+1
+        
+    def playListInit(self):
+        cmdstr = "echo \"#EXTM3U\" >>  /tmp/%s/play.m3u8"%(self.VideoFileNameAlias) 
+        self.GenPlaylistCmdList.append(cmdstr)
+    
+    def genPlaylist(self,pid,bandwidth,fwidth,fheight,nameflag):
+        cmd = "echo \"#EXT-X-STREAM-INF:PROGRAM-ID=%s,BANDWIDTH=%s,RESOLUTION=%sx%s\" >> /tmp/%s/play.m3u8 &&"
+        cmd = cmd + " echo \"%s/output.m3u8\" >> /tmp/%s/play.m3u8"
+        cmdstr = cmd%(pid,bandwidth,fwidth,fheight,self.VideoFileNameAlias,nameflag,self.VideoFileNameAlias)
+        self.GenPlaylistCmdList.append(cmdstr)
+    
+    def initReducerEnv(self):
+        CmdList = ["mkdir /tmp/%s && mkdir /tmp/%s/avfiles"%(self.VideoFileNameAlias,self.VideoFileNameAlias)]
+        return CmdList
+    
+    def downMa(self):
+        CmdList = ["%s fs -get hdfs://%s/%s/avfiles/ma.%s /tmp/%s/avfiles/"%(self.HadoopBinDir,self.HadoopNNAddr,self.VideoFileNameAlias,"mp4",self.VideoFileNameAlias)]
+        return CmdList
+    
+    def downVideoSegs(self):
+        cmd = "%s fs -get hdfs://%s/%s/avfiles/*.part* /tmp/%s/avfiles/"
+        cmdstr = cmd%(self.HadoopBinDir,self.HadoopNNAddr,self.VideoFileNameAlias,self.VideoFileNameAlias) 
+        self.HadoopDownCmdList.append(cmdstr)
+    
+    def genMegpTs(self,nameflag):
+        for i in range(self.SegmentNums):
+            ### - Xinglong cmd = "cd /tmp/%s/avfiles/ && ffmpeg.1.0.1 -y -i %s.part%sv.%s -an -vcodec copy -bsf h264_mp4toannexb -copyinkf %s.part%sv.megp.ts"
+            cmd = "cd /tmp/%s/avfiles/ && ffmpeg.1.0.1 -y -i %s.part%sv.%s -an -vcodec copy -bsf h264_mp4toannexb %s.part%sv.megp.ts"
+            cmdstr = cmd%(self.VideoFileNameAlias,nameflag,i+1,self.VideoFormat,nameflag,i+1)
+            self.FFmpegTsCmdList.append(cmdstr)
+            
+    def megerTsSegsToMv(self,nameflag):
+        list = []
+        for i in range(self.SegmentNums):
+            obj = str("%s.part%sv.megp.ts"%(nameflag,i+1))
+            list.append(obj)
+        megerstr = '|'.join(list)
+        
+        ### - Xinglong cmd = "cd /tmp/%s/avfiles/ && ffmpeg.1.0.1 -y -i \"concat:%s\" -vcodec copy -bsf aac_adtstoasc -copyinkf /tmp/%s/avfiles/%s.mv.%s"
+        cmd = "cd /tmp/%s/avfiles/ && ffmpeg.1.0.1 -y -i \"concat:%s\" -vcodec copy -bsf aac_adtstoasc /tmp/%s/avfiles/%s.mv.%s"
+        cmdstr = cmd%(self.VideoFileNameAlias,megerstr,self.VideoFileNameAlias,nameflag,self.VideoFormat)
+        self.FFmpegMvCmdList.append(cmdstr)
+        
+    def combineMvAndMa(self,nameflag):
+        ### - Xinglong  cmd = "cd /tmp/%s/avfiles/ && ffmpeg.1.0.1 -y -i ma.%s -i %s.mv.%s -acodec copy -vcodec copy -copyinkf /tmp/%s/%s.%s"
+        cmd = "cd /tmp/%s/avfiles/ && ffmpeg.1.0.1 -y -i ma.%s -i %s.mv.%s -acodec copy -vcodec copy /tmp/%s/%s.%s"
+        cmdstr = cmd%(self.VideoFileNameAlias,"mp4",nameflag,self.VideoFormat,self.VideoFileNameAlias,nameflag,self.VideoFormat)
+        self.FFmpegVideoCmdList.append(cmdstr)
+        
+    def screenShot(self,nameflag):
+        if self.VideoDuration > 10:
+            cmd = "cd /tmp/%s/ && ffmpeg.1.0.1 -ss 00:00:05 -i %s.%s -vframes 1 play.jpg"
+        else:
+            cmd = "cd /tmp/%s/ && ffmpeg.1.0.1 -ss 00:00:01 -i %s.%s -vframes 1 play.jpg"
+        cmdstr = cmd%(self.VideoFileNameAlias,nameflag,self.VideoFormat)
+        self.FFmpegScreenshotCmdList.append(cmdstr)
+
+    def genM3u8(self,nameflag,SegmentTime):
+        cmd = " cd /tmp/%s/ && mkdir %s &&"
+        cmd = cmd + " ffmpeg.1.0.1 -i %s.%s -acodec copy -vcodec copy -bsf:v h264_mp4toannexb -f mpegts /tmp/%s/%s/output.ts &&"
+        cmd = cmd + " cd /tmp/%s/%s/ &&"
+        cmdstr = cmd%(self.VideoFileNameAlias,nameflag,nameflag,self.VideoFormat,self.VideoFileNameAlias,nameflag,self.VideoFileNameAlias,nameflag)
+
+        cmdstr = cmdstr + " ffmpeg.1.0.1 -i output.ts -vcodec copy -acodec copy -map 0 -f segment -segment_time_delta 0.5 -segment_time %s"%SegmentTime 
+        cmdstr = cmdstr + " -segment_list output.m3u8 -segment_list_type m3u8 -segment_format mpegts output%04d.ts"
+        self.FFmpegGenM3u8CmdList.append(cmdstr)
+        self.trimM3u8File(nameflag)
+        
+    def isTrimM3u8File(self):
+        #默认分段时间
+        if self.VideoDuration <= 120:
+            DefSegmentTime = 2
+        elif 120 < self.VideoDuration <= 600:
+            DefSegmentTime = 4
+        else:
+            DefSegmentTime = 10
+            
+        SuccFlag = True
+        SegmentTime = DefSegmentTime
+        self.OptimalSegTime = DefSegmentTime
+        RunCmdObj = baseclass.runCmd(self.logger,self.VideoFileNameAlias,self.IsWaterMark,self.IsOverWrite)
+        
+        #尝试划分240p.mp4    
+        #清理工作目录
+        RunCmdObj.run(["rm -rf /tmp/%s/%s"%(self.VideoFileNameAlias,"calst")])
+        
+        cmd = " cd /tmp/%s/ && mkdir %s &&"
+        cmd = cmd + " ffmpeg.1.0.1 -i %s.%s -acodec copy -vcodec copy -bsf:v h264_mp4toannexb -f mpegts /tmp/%s/%s/output.ts &&"
+        cmd = cmd + " cd /tmp/%s/%s/ &&"
+        cmdstr = cmd%(self.VideoFileNameAlias,"calst","240p",self.VideoFormat,self.VideoFileNameAlias,"calst",self.VideoFileNameAlias,"calst")
+        cmdstr = cmdstr + " ffmpeg.1.0.1 -i output.ts -vcodec copy -acodec copy -map 0 -f segment -segment_time_delta 0.5 -segment_time %s"%SegmentTime 
+        cmdstr = cmdstr + " -segment_list output.m3u8 -segment_list_type m3u8 -segment_format mpegts output%04d.ts"
+        RunCmdObj.run([cmdstr])
+                    
+        #得到划分后文件列表,找出最后一段ts文件
+        TsFileList = os.listdir("/tmp/%s/%s/"%(self.VideoFileNameAlias,"calst"))
+        TsFileList.remove("output.m3u8")
+        TsFileList.sort()
+        FinalTsFile = TsFileList[len(TsFileList)-1]
+        
+        #分析最后一段ts文件是否是正常视频文件
+        FinalTsFilePath = "/tmp/%s/%s/%s"%(self.VideoFileNameAlias,"calst",FinalTsFile)
+        RunCmdObj.run(["ffprobe -show_streams %s"%(FinalTsFilePath)],QuitFlag=False)
+        try:
+           VStreamsList = baseclass.getVideoMetaDList(RunCmdObj.stdout,"STREAM")
+        except Exception,e:
+           VStreamsList = [] 
+     
+        
+        VStream = 0
+        AStream = 0
+        
+        if len(VStreamsList) == 2:            
+            for i in range(2):
+                if VStreamsList[i]["codec_type"] == "video":
+                    VStream = VStream + 1
+                    if VStream == 1:
+                        VStreamsVDict = VStreamsList[i]
+                if VStreamsList[i]["codec_type"] == "audio":
+                    AStream = AStream + 1
+                    if AStream == 1:
+                        VStreamsADict = VStreamsList[i]
+                            
+            if VStream == 1 and AStream == 1:     
+                #最后一段ts文件视频流正常,音频流异常.
+                audio_sample_rate = VStreamsADict["sample_rate"]
+                audio_channels = VStreamsADict["channels"]
+                audio_bit_rate = VStreamsADict["bit_rate"]
+                if audio_sample_rate == 0 or audio_channels == 0 or audio_bit_rate == "N/A":
+                    SuccFlag = False
+            elif VStream == 2 and AStream == 0:
+                #最后一段ts文件只有视频流,无音频流.
+                SuccFlag = False
+            else:
+                #最后一段ts文件只有音频流,无视频流.
+                SuccFlag = False
+        elif len(VStreamsList) == 1:
+            #最后一段ts文件只包含一个流
+            SuccFlag = False
+        else:
+            #最后一段ts文件包含大于2个流或没有流
+            SuccFlag = False
+                
+        if SuccFlag == False:
+            self.TrimM3u8Flag = True
+            self.logger.info("Final TS segment file have problem,Need trim m3u8 file")
+                        
+        #清理工作目录
+        RunCmdObj.run(["rm -rf /tmp/%s/%s"%(self.VideoFileNameAlias,"calst")])
+    
+    def trimM3u8File(self,nameflag):
+        
+        cmdstr = "cd /tmp/%s/%s &&"%(self.VideoFileNameAlias,nameflag)
+        cmdstr = cmdstr + "tac output.m3u8 > output.m3u8.tmp && sed -i \"2,3d\" output.m3u8.tmp && tac output.m3u8.tmp > output.m3u8 && rm -f output.m3u8.tmp"
+        self.TrimM3u8FileCmdList.append(cmdstr)
+        
+    def uploadVideo(self):
+        vid = self.VideoFileNameAlias
+        uid = self.VideoFileNameAlias[0:4]
+
+        #cmd = "rm -rf /tmp/%s/avfiles && rm -f /tmp/%s/*.%s"
+        cmd = "rm -rf /tmp/%s/avfiles && rm -f /tmp/%s/???p.%s"
+        cmdstr = cmd%(vid,vid,self.VideoFormat)
+        self.HadoopUploadCmdList.append(cmdstr)
+    
+    def rename(self,nameflag):
+        
+        cmd = "mv /tmp/%s/%s.%s /tmp/%s/%s.%s"
+        cmdstr = cmd%(self.VideoFileNameAlias,nameflag,self.VideoFormat,self.VideoFileNameAlias,"play",self.VideoFormat)
+        self.RenameCmdList.append(cmdstr)
+    
+    def genPrevPics(self,nameflag):
+        
+        PicHeight = 80
+        #PicWidth = int(PicHeight*self.VideoFrameWidth/self.VideoFrameHeight)
+        PicWidth = 106
+        vid = self.VideoFileNameAlias
+                
+        TsFileList = os.listdir("/tmp/%s/%s/"%(vid,nameflag))
+        TsFileList.remove("output.m3u8")
+        TsFileList.remove("output.ts")
+        TsFileList.sort()
+        
+        GenPreviewPicsCmdList = []
+        cmd1str = "mkdir /tmp/%s/preview"%vid
+        GenPreviewPicsCmdList.append(cmd1str)
+        cmd = "ffmpeg.1.0.1 -i /tmp/%s/%s/%s -vframes 1 -s %sx%s /tmp/%s/preview/%s.jpg"
+        for tsfile in TsFileList:
+            picname = tsfile.split(".")[0]
+            cmd2str = cmd%(vid,nameflag,tsfile,PicWidth,PicHeight,vid,picname)
+            GenPreviewPicsCmdList.append(cmd2str)
+            
+        return GenPreviewPicsCmdList
+        
+    def genPrevFile(self):
+        
+        cmd = "cp /tmp/%s/%s.%s /tmp/%s/%s.%s"
+        cmdstr = cmd%(self.VideoFileNameAlias,"240p",self.VideoFormat,self.VideoFileNameAlias,"prev",self.VideoFormat)
+        self.GenPrevFileCmdList.append(cmdstr)
+        
+    def genADPic(self):
+        cmd = "ffmpeg.1.0.1 -ss 00:00:01  -i /tmp/%s/%s.%s -vframes 1 -s 300x250 /tmp/%s/ad.jpg"
+        cmdstr = cmd%(self.VideoFileNameAlias,"240p",self.VideoFormat,self.VideoFileNameAlias) 
+        self.GenPrevFileCmdList.append(cmdstr)      
+           
+    def main(self,nameflag,screenshot=False):
+           
+        #生成megp.ts文件
+        self.genMegpTs(nameflag)
+        
+        #聚合megp.ts文件为mv文件
+        self.megerTsSegsToMv(nameflag)
+        
+        #合并ma和mv成视频文件
+        self.combineMvAndMa(nameflag)
+        
+        #生成手机播放文件
+        if nameflag == "240p":
+            self.genPrevFile()
+            self.genADPic()
+        
+        #截图
+        if screenshot == True:
+            self.screenShot(nameflag)
+            self.rename(nameflag)
+            self.ClosestOriginalFileFlag = nameflag
+            
+    def mainM3u8(self):
+        if self.VideoFrameHeight <= 300:
+            self.genM3u8("240p",self.OptimalSegTime)
+        if 300 < self.VideoFrameHeight <= 420:
+            self.genM3u8("360p",self.OptimalSegTime)
+            self.genM3u8("240p",self.OptimalSegTime)
+        if 420 < self.VideoFrameHeight <= 600 :
+            self.genM3u8("480p",self.OptimalSegTime)
+            self.genM3u8("360p",self.OptimalSegTime)
+            self.genM3u8("240p",self.OptimalSegTime)            
+        if 600 < self.VideoFrameHeight <= 1000 :
+            self.genM3u8("720p",self.OptimalSegTime)
+            self.genM3u8("480p",self.OptimalSegTime)
+            self.genM3u8("360p",self.OptimalSegTime)
+            self.genM3u8("240p",self.OptimalSegTime)                       
+        if self.VideoFrameHeight > 1000:
+            self.genM3u8("1080p",self.OptimalSegTime)
+            self.genM3u8("720p",self.OptimalSegTime)
+            self.genM3u8("480p",self.OptimalSegTime)
+            self.genM3u8("360p",self.OptimalSegTime)
+            self.genM3u8("240p",self.OptimalSegTime)              
+        
+        return self.FFmpegGenM3u8CmdList        
+                
+    def complexHandle(self):
+        
+        self.chkVideoBitRate()
+
+        #下载视频段
+        self.downVideoSegs()
+        
+        #play.m3u8初始化
+        self.playListInit()
+        
+        if self.VideoFrameHeight <= 300:
+            self.main("240p",screenshot=True)
+                
+            self.genPlaylist(1,256000,self.VideoFrameWidth,self.VideoFrameHeight,"240p")
+            
+            self.CalBitRate.append([1,"240p",self.VideoBitRate240P+self.AudioBitRate])
+            
+        if 300 < self.VideoFrameHeight <= 420:
+            self.main("360p",screenshot=True)
+            self.main("240p")
+                
+            self.genPlaylist(1,512000,self.VideoFrameWidth,self.VideoFrameHeight,"360p")
+                
+            newidth = self.getNewFrameWidth("240")
+            self.genPlaylist(2,256000,newidth,240,"240p")
+            
+            self.CalBitRate.append([2,"360p",self.VideoBitRate360P+self.AudioBitRate])
+            self.CalBitRate.append([1,"240p",self.VideoBitRate240P+self.AudioBitRate])
+                
+        if 420 < self.VideoFrameHeight <= 600 :
+            self.main("480p",screenshot=True)
+            self.main("360p")
+            self.main("240p")
+                
+            self.genPlaylist(1,1024000,self.VideoFrameWidth,self.VideoFrameHeight,"480p")
+                
+            newidth = self.getNewFrameWidth("360")
+            self.genPlaylist(2,512000,newidth,360,"360p")
+                
+            newidth = self.getNewFrameWidth("240")
+            self.genPlaylist(3,256000,newidth,240,"240p")
+            
+            self.CalBitRate.append([3,"480p",self.VideoBitRate480P+self.AudioBitRate])
+            self.CalBitRate.append([2,"360p",self.VideoBitRate360P+self.AudioBitRate])
+            self.CalBitRate.append([1,"240p",self.VideoBitRate240P+self.AudioBitRate])
+            
+        if 600 < self.VideoFrameHeight <= 1000 :
+            self.main("720p",screenshot=True)
+            self.main("480p")
+            self.main("360p")
+            self.main("240p")
+                
+            self.genPlaylist(1,2048000,self.VideoFrameWidth,self.VideoFrameHeight,"720p")
+                
+            newidth = self.getNewFrameWidth("480")
+            self.genPlaylist(2,1024000,newidth,480,"480p")
+                
+            newidth = self.getNewFrameWidth("360")
+            self.genPlaylist(3,512000,newidth,360,"360p")
+                
+            newidth = self.getNewFrameWidth("240")
+            self.genPlaylist(4,256000,newidth,240,"240p")
+            
+            self.CalBitRate.append([4,"720p",self.VideoBitRate720P+self.AudioBitRate])
+            self.CalBitRate.append([3,"480p",self.VideoBitRate480P+self.AudioBitRate])
+            self.CalBitRate.append([2,"360p",self.VideoBitRate360P+self.AudioBitRate])
+            self.CalBitRate.append([1,"240p",self.VideoBitRate240P+self.AudioBitRate])
+                
+        if self.VideoFrameHeight > 1000:
+            self.main("1080p",screenshot=True)
+            self.main("720p")
+            self.main("480p")
+            self.main("360p")
+            self.main("240p")
+                
+            self.genPlaylist(1,3072000,self.VideoFrameWidth,self.VideoFrameHeight,"1080p")
+
+            newidth = self.getNewFrameWidth("720")
+            self.genPlaylist(2,2048000,newidth,720,"720p")                
+                
+            newidth = self.getNewFrameWidth("480")
+            self.genPlaylist(3,1024000,newidth,480,"480p")
+                
+            newidth = self.getNewFrameWidth("360")
+            self.genPlaylist(4,512000,newidth,360,"360p")
+                
+            newidth = self.getNewFrameWidth("240")
+            self.genPlaylist(5,256000,newidth,240,"240p")
+            
+            self.CalBitRate.append([5,"1080p",self.VideoBitRate1080P+self.AudioBitRate])
+            self.CalBitRate.append([4,"720p",self.VideoBitRate720P+self.AudioBitRate])
+            self.CalBitRate.append([3,"480p",self.VideoBitRate480P+self.AudioBitRate])
+            self.CalBitRate.append([2,"360p",self.VideoBitRate360P+self.AudioBitRate])
+            self.CalBitRate.append([1,"240p",self.VideoBitRate240P+self.AudioBitRate])
+                            
+        #上传视频文件
+        self.uploadVideo()
+                
+        self.CmdDict["download"] = self.HadoopDownCmdList
+        self.CmdDict["ts"] = self.FFmpegTsCmdList
+        self.CmdDict["mv"] = self.FFmpegMvCmdList
+        self.CmdDict["video"] = self.FFmpegVideoCmdList
+        self.CmdDict["screenshot"] = self.FFmpegScreenshotCmdList
+        self.CmdDict["playlist"] = self.GenPlaylistCmdList
+        self.CmdDict["prev"] = self.GenPrevFileCmdList
+        self.CmdDict["rename"] = self.RenameCmdList
+        self.CmdDict["upload"] = self.HadoopUploadCmdList
+        
+        return self.CmdDict
+     
+#################################
+
+if __name__ == "__main__":
+    
+    logger = baseclass.getlog("reducer")
+    datadate = datetime.datetime.now().strftime("%Y%m%d")
+    
+    # --/
+    #     Initialization stage
+    # --/
+    
+    try:
+        logger.info("Start reducer.....")
+        
+        #视频元数据
+        info_dict = pickle.load(open('video.info','r'))
+
+        #hadoop信息
+        hadoopinfo_dict = pickle.load(open('hadoop.info','r'))
+        
+        #初始化mysql对象
+        MysqlObj = baseclass.interWithMysql(logger,info_dict['name'])
+        
+    except Exception,e:
+        logger.error("reducer init exception: %s"%e)
+        MysqlObj.writeStatus("fail",info_dict['iswatermark'],info_dict['isoverwrite'],info="reducer init exception: %s"%e)
+        sys.exit()
+    
+    #重新初始化日志对象和mysql对象
+    logger = baseclass.getlog(info_dict['name'],loglevel=info_dict['loglevel'])  
+    MysqlObj = baseclass.interWithMysql(logger,info_dict['name'])
+    
+    #初始化redis对象
+    RedisObj = baseclass.interWithRedis(logger,info_dict['name'])
+    
+    # --/
+    #     Execute commands stage
+    # --/
+    
+    try:
+        RunCmdObj = baseclass.runCmd(logger,info_dict['name'],info_dict['iswatermark'],info_dict['isoverwrite'])
+        
+        VideoObj = reduceCmdOutput(info_dict,hadoopinfo_dict,logger)
+        
+        RunCmdObj.run(VideoObj.initReducerEnv(),QuitFlag=False)
+        
+        #初始化map hdfs对象
+        MapHdfsHost = VideoObj.HadoopNNAddr.split(":")[0]
+        MapWebHdfs = baseclass.WebHadoopOld(MapHdfsHost,"50071","cloudiyadatauser",logger)
+        
+        #初始化storage hdfs对象
+        StoHdfsHost = "10.2.0.8,10.2.0.10"
+        StoWebHdfs = baseclass.WebHadoop(StoHdfsHost,14000,"cloudiyadatauser",logger)
+        
+        VideoAvdir_inhdfs = "/%s/avfiles" % VideoObj.VideoFileNameAlias
+        VideoTmpdir_inlocal  = "/tmp/%s" % VideoObj.VideoFileNameAlias
+        VideoAvdir_inlocal = VideoTmpdir_inlocal + "/avfiles"
+ 
+        VideoAvfile_inhdfs = VideoAvdir_inhdfs + "/" + "ma.mp4"
+        VideoAvfile_inlocal = VideoAvdir_inlocal + "/" + "ma.mp4"
+        
+        MapWebHdfs.get_dir(VideoAvdir_inlocal,VideoAvdir_inhdfs)
+
+        vid = VideoObj.VideoFileNameAlias
+        uid = VideoObj.VideoFileNameAlias[0:4]
+
+        cmddict = VideoObj.complexHandle()
+ 
+        RunCmdObj.run(cmddict["ts"])
+        
+        RunCmdObj.run(cmddict["mv"])
+        
+        RunCmdObj.run(cmddict["video"])
+        
+        RunCmdObj.run(cmddict["screenshot"])
+                
+        VideoObj.isTrimM3u8File()
+        M3u8CmdList = VideoObj.mainM3u8()
+        RunCmdObj.run(M3u8CmdList)
+        
+        if VideoObj.TrimM3u8Flag == True:
+            TrimM3u8FileCmdList = VideoObj.TrimM3u8FileCmdList
+            RunCmdObj.run(TrimM3u8FileCmdList)
+            
+        RunCmdObj.run(cmddict["prev"])
+        
+        RunCmdObj.run(cmddict["rename"])
+ 
+        nameflag = VideoObj.ClosestOriginalFileFlag
+        GenPreviewPicsCmdList = VideoObj.genPrevPics(nameflag)
+        RunCmdObj.run(GenPreviewPicsCmdList)      
+        
+        RunCmdObj.run(cmddict["playlist"])
+        
+        RunCmdObj.run(cmddict["upload"])
+        
+        Videodir_instohdfs = "/static/%s/%s" % (uid,vid)
+        StoWebHdfs.put_dir(VideoTmpdir_inlocal,Videodir_instohdfs,overwrite="true")
+        
+        redis_key = "%s_info" % vid
+        
+        redis_data = {}
+        
+        for i in VideoObj.CalBitRate:
+            if i[0] == 1:
+                redis_data["one"] = i[2]
+            if i[0] == 2:
+                redis_data["two"] = i[2]
+            if i[0] == 3:
+                redis_data["three"] = i[2]
+            if i[0] == 4:
+                redis_data["four"] = i[2]
+            if i[0] == 5:
+                redis_data["five"] = i[2]
+        
+        redis_data["duration"] =  VideoObj.VideoDuration
+        redis_data["starttime"] = datadate
+        
+        RedisObj.WritetoRedis(redis_key,redis_data,db=0)
+        
+    except Exception,e:  
+        logger.error("Execute commands exception : %s"%e) 
+        MysqlObj.writeStatus("fail",info_dict['iswatermark'],info_dict['isoverwrite'],info="Execute commands exception : %s"%e)
+        sys.exit()    
+
+    try:
+        redis_uid_data_key = "%s_rdate" % (uid)
+        value = datadate
+        RedisObj.WriteUid_Date(redis_uid_data_key,value,db=0)
+    except Exception,e:
+        logger.error("Execute write uid rdate into redis exception : %s"%e) 
+    
+    try:
+        redis_uid_set_key = "user_info"
+        value = uid
+        RedisObj.WriteUid_set(redis_uid_set_key,value,db=0)
+    except Exception,e:
+        logger.error("Execute write uid into redis set exception : %s"%e)  
+              
+    # --/
+    #     Finishing stage
+    # --/
+    
+    try:
+        """各分辨率码率写到mysql"""
+        #MysqlObj.writeBitRate(VideoObj.CalBitRate)
+            
+        """清理reducer节点临时文件"""
+        RunCmdObj.run(["rm -rf /tmp/%s/"%(info_dict['name'])])
+                   
+        """视频处理成功更新mysql库状态"""
+        MysqlObj.writeStatus("success",info_dict['iswatermark'],info_dict['isoverwrite'],info="video handle success")
+            
+    except Exception,e:  
+        logger.error("Finishing stage exception : %s"%e) 
+        MysqlObj.writeStatus("fail",info_dict['iswatermark'],info_dict['isoverwrite'],info="Finishing stage exception")
+        sys.exit()    
+
+    logger.info("reducer handle video file complete!") 
