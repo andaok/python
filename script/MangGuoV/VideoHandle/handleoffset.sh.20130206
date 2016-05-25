@@ -1,0 +1,156 @@
+#!/bin/bash
+####################################
+
+path=$1
+name=$2
+suffix=$3
+n=$4
+dr=$5
+time=$6
+
+af="-acodec copy"
+vf="-vcodec copy"
+lista=""
+listv=""
+
+logfile="/dev/null" 
+
+####################################
+
+{
+
+# -- /
+#     Video file meta data information      
+# -- /
+
+#########################
+vb=$(echo `ffprobe  $path 2>&1   | grep -w Video | cut -f 4 -d "," | awk '{print $1}'`)
+vcc=$(echo `ffprobe $path 2>&1  | grep -w Video | cut -f 1 -d "," | awk -F: '{print $4}' | awk '{print $1}'`)
+#########################
+
+#########################
+ab=$(echo `ffprobe  $path 2>&1   | grep -w Audio | cut -f 5 -d "," | awk '{print $1}'`)
+acc=$(echo `ffprobe $path 2>&1  | grep -w Audio | cut -f 1 -d "," | awk -F: '{print $4}' | awk '{print $1}'`)
+ar=$(echo `ffprobe  $path 2>&1  | grep -w Audio | cut -f 2 -d "," | awk '{print $1}'`)
+ac=$(echo `ffprobe  $path 2>&1  | grep -w Audio | cut -f 3 -d ","`)
+#########################
+
+
+# --/
+#    Split video from origin video file
+#    Different video encoding formats do different processing
+# --/
+
+case $vcc in
+
+     "rv40")
+            suffix="mp4"
+            ffmpeg -y -i $path -an -vcodec h264 -vb ${vb}k  -copyinkf  mv.$suffix  >> $logfile 2>&1;;
+          *)
+            ffmpeg -y -i $path -an $vf $af -copyinkf  mv.$suffix  >> $logfile 2>&1;;
+esac
+
+
+# --/
+#    Split audio from origin video file
+#    Different audio encoding formats do different processing
+# --/
+
+case $acc in
+
+     "aac"|"mp3")
+                 ffmpeg -y -i $path -vn $vf $af  ma.mp4  >> $logfile 2>&1;;
+               *)
+                 case $ar in
+                      22050) if [ "$ab" -gt "130" ]; then ab=130; fi;;
+                      44100) if [ "$ab" -gt "250" ]; then ab=250; fi;;          
+                 esac
+                 ffmpeg -y -i $path -vn $vf -acodec aac -ab ${ab}k -ar $ar -strict -2  ma.mp4  >> $logfile 2>&1;;
+esac
+
+
+# --/
+#    Cut the video file into pieces of audio & video streams
+# --/
+
+for i in $(seq $n); do
+    st=`expr \( $i - 1 \) \* $dr`
+    ffmpeg -y -i mv.$suffix -an $vf -ss $st -t $dr part${i}v.$suffix -copyinkf >> $logfile 2>&1
+    ffmpeg -y -i ma.mp4 -vn $af -ss $st -t $dr part${i}a.mp4 -copyinkf >> $logfile 2>&1
+
+    pdrv=$(ffprobe part${i}v.$suffix 2>&1 | grep "Duration" | cut -f 4 -d " " | cut -f 1 -d ",")
+    sdrv=$(ffprobe part${i}v.$suffix 2>&1 | grep "Duration" | cut -f 6 -d " " | cut -f 1 -d ",")
+    pdra=$(ffprobe part${i}a.mp4 2>&1 | grep "Duration" | cut -f 4 -d " " | cut -f 1 -d ",")
+    sdra=$(ffprobe part${i}a.mp4 2>&1 | grep "Duration" | cut -f 6 -d " " | cut -f 1 -d ",")
+    echo "PART$i RAW Duration: Video $pdrv Audio $pdra" >> $logfile
+    echo "PART$i RAW Start:    Video $sdrv Audio $sdra" >> $logfile
+
+    vh=$(echo $pdrv | cut -f 1 -d ":")
+    vm=$(echo $pdrv | cut -f 2 -d ":")
+    vs=$(echo $pdrv | cut -f 3 -d ":")
+    ah=$(echo $pdra | cut -f 1 -d ":")
+    am=$(echo $pdra | cut -f 2 -d ":")
+    as=$(echo $pdra | cut -f 3 -d ":")
+    
+    if [ $i != 1 ]; then
+       vl=$(echo "$vh*3600+$vm*60+$vs" | bc)
+       al=$(echo "$ah*3600+$am*60+$as" | bc)
+       echo "video length $vl" >> $logfile
+       echo "aideo length $al" >> $logfile
+       
+       if [ `echo "$vl*100" | bc | awk -F. '{print $1}'` -lt `echo "$al*100" | bc | awk -F. '{print $1}'` ]; then
+          offset=$(echo "$al - $vl" | bc)
+          
+          if [ `expr index $offset "."` == 1 ]; then
+             offset=0$offset
+          else
+             offset=$offset
+          fi
+          
+          ffmpeg -y -i part${i}a.mp4 -ss $offset $af $vf -copyinkf tmp.mp4 > $logfile 2>&1
+       else
+          offset=$(echo "$vl - $al" | bc)
+          
+          if [ `expr index $offset "."` == 1 ]; then
+             offset=0$offset
+          else
+             offset=$offset
+          fi
+          
+          if [ $offset != 0 ]; then
+             ffmpeg -y -i part${i}a.mp4 -ss -$offset $af $vf -copyinkf tmp.mp4 > $logfile 2>&1    
+          fi
+       fi
+       
+       echo "offset for part$i $offset" > $logfile
+       mv -f tmp.mp4 part${i}a.mp4
+    fi
+
+    ffmpeg -y -i part${i}a.mp4 -vn $af -vbsf h264_mp4toannexb -copyinkf part${i}a.megp.ts > $logfile 2>&1
+
+    lista="$lista part${i}a.megp.ts"
+    listv="$listv part${i}v.$suffix"
+done
+
+lista=`echo $lista | sed "s/ /\|/g"`
+
+#cut video segments to avfiles directory
+cp -f $listv /tmp/${name}/avfiles/
+
+# merge the streams
+ffmpeg -y -i "concat:$lista" $af -absf aac_adtstoasc -copyinkf /tmp/${name}/avfiles/ma.mp4 > $logfile 2>&1
+
+} >> $logfile
+
+#########################################
+
+# --/
+#    Return video meta information to python script
+# --/
+
+echo "{\"suffix\":\"$suffix\"}"
+
+#########################################
+
+exit 0
+

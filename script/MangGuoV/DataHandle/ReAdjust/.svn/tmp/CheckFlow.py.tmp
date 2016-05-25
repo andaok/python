@@ -1,0 +1,905 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+
+import sys
+import datetime
+import redis
+import MySQLdb
+import Queue
+import threading
+#from pymongo import MongoClient
+from UserInfo import UidInfo
+from UserInfo import TypeInfo
+import smtplib
+from email.mime.text import MIMEText 
+<<<<<<< .mine
+
+
+from PubMod import getLog
+from PubMod import SendMail
+from PubMod import HandleConfig
+from PubMod import get_days_list
+=======
+#from PubMod import HandleConfig
+#from PubMod import getLog
+>>>>>>> .r331
+
+
+# --/
+#     检查用户套餐状态,依情况作出相应处理.
+# --/
+
+<<<<<<< .mine
+class CheckUserPackage():
+=======
+    days_list = []
+    sum = 0
+    for i in month_days.iterkeys():
+        if int(i)%12 == 2 :
+            feb_days = int(i)/12
+            month_days[i]= leap_year[feb_days]
+            
+    for i in month_days.iterkeys():
+        sum += month_days[i]
+        days_list.append(sum)
+
+    new_days_list = days_list[:-1]
+    #new_days_list.append(0)
+    begin_day_list = []
+>>>>>>> .r331
+    
+    def __init__(self,uid,logger,datadate,redata,mongoconn,mysql_conn):
+        
+        self.uid = uid
+        self.logger = logger
+        self.today = str(datadate)
+        self.redata = redata
+        self.mongoconn = mongoconn
+        self.mysql_conn = mysql_conn
+        
+    def UserPackageInfo(self):
+        
+        self.UidObj = UidInfo(self.mysql_conn,self.mongoconn,self.uid)
+        
+        flow_info = self.UidObj.get_flow_info(self.uid)
+        
+        '''用户套餐所属类别ID'''
+        self.Now_TypeID = flow_info[7]
+        
+        '''用户email地址'''
+        self.Email = flow_info[8]
+        
+        '''用户套餐开始日期'''
+        self.Now_StartDate = str(flow_info[0])
+        '''用户套餐结束日期'''
+        self.Now_EndDate = str(flow_info[1])
+        
+        '''用户套餐购买月数'''
+        self.Now_Month_Count = flow_info[2]
+        '''用户套餐月规定流量'''
+        self.Now_Month_Flow = flow_info[3]
+        '''用户该月已用流量'''
+        self.Now_Month_Used_Flow = flow_info[4]
+        '''用户该月已超流量'''
+        self.Now_Month_Advance_Flow = flow_info[5]
+        
+        '''用户今天消耗流量'''
+        self.Daily_Flow = self.UidObj.get_daily_flow(self.uid)/1024
+        
+        '''截至今天用户该月消耗总流量'''
+        self.Month_Sum_Flow = self.Now_Month_Used_Flow + self.Now_Month_Advance_Flow + self.Daily_Flow
+        
+        '''Write to log file for debug'''
+        self.logger.debug("Now Package info :      \n \
+                           Uid : %s                \n \
+                           TypeID : %s             \n \
+                           Email  : %s             \n \
+                           StartDate : %s          \n \
+                           EndDate : %s            \n \
+                           Month_Count : %s        \n \
+                           Month_Flow : %s         \n \
+                           Month_Used_Flow : %s    \n \
+                           Month_Advance_Flow : %s \n \
+                           Daily_Flow : %s         \n \
+                           Month_Sum_Flow : %s     \n \
+                         "%(self.uid,self.Now_TypeID,self.Email,self.Now_StartDate,self.Now_EndDate,self.Now_Month_Count,self.Now_Month_Flow,self.Now_Month_Used_Flow,self.Now_Month_Advance_Flow,self.Daily_Flow,self.Month_Sum_Flow))
+        
+    def FreeUserPackageInfo(self):
+        
+        '''免费套餐用户所属类别ID'''
+        self.Free_TypeID = 2
+        
+        self.typeObj = TypeInfo(self.mysql_conn,self.Free_TypeID)
+        
+        '''免费套餐月规定流量'''
+        self.Free_Month_Flow = self.typeObj.flow
+        
+        '''免费套餐结束日期'''
+        self.Free_EndDate = "0000-00-00"
+        
+        '''免费套餐规定月数'''
+        self.Free_Month_Count = 0
+    
+        '''Write to log file for debug'''
+        self.logger.debug("Free Package info : \n \
+                           Uid  : %s           \n \
+                           TypeID : %s         \n \
+                           Month_Flow : %s     \n \
+                         "%(self.uid,self.Free_TypeID,self.Free_Month_Flow))
+    
+    def UserPackageExtInfo(self):
+        
+        Ext_TypeInfo = self.typeObj.get_ext_typeinfo(self.uid)
+        
+        '''扩展表开始时间'''
+        self.old_starttime = str(Ext_TypeInfo[0])
+        '''扩展表结束时间'''
+        self.ext_enddate = str(Ext_TypeInfo[1])
+        '''扩展表月流量限制'''
+        self.o_mount_flow = Ext_TypeInfo[2]
+        '''扩展表续费标签'''
+        self.is_ext = Ext_TypeInfo[3]
+        '''扩展表月数'''
+        self.total_mouth = Ext_TypeInfo[4]
+        
+        '''Write to log file for debug'''
+        self.logger.debug("Ext Package info : \n \
+                           Uid : %s           \n \
+                           old_starttime : %s \n \
+                           ext_enddate : %s   \n \
+                           o_mount_flow : %s  \n \
+                           is_ext : %s        \n \
+                           total_mouth : %s   \n \
+                         "%(self.uid,self.old_starttime,self.ext_enddate,self.o_mount_flow,self.is_ext,self.total_mouth))
+        
+    def ExeMysqlCmd(self,sql,param):
+        '''执行mysql语句'''
+        SqlCmd = sql%param
+        try:
+            cursor = self.mysql_conn.cursor()
+            self.mysql_conn.select_db('video')
+            cursor.execute(sql,param)
+            self.mysql_conn.commit()
+        except Exception,e:
+            self.logger.error("Execute sql error : \n %s "%SqlCmd)
+        finally:
+            self.logger.debug("Execute sql : \n  %s"%SqlCmd)
+            
+    def ExeRedisCmd(self,key,value):
+        '''执行redis语句'''
+        try:
+            self.redata.set(key,value)
+        except Exception,e:
+            self.logger.error("Execute redis cmd error")
+            
+    
+    def FallLevel(self):
+        '''用户套餐降级到免费套餐'''
+        new_begindate = datetime.datetime.now().strftime("%Y-%m-%d")
+        new_enddate = self.Free_EndDate
+        new_month_flow = self.Free_Month_Flow
+        new_month_count = self.Free_Month_Count
+        now_month_used = self.Month_Sum_Flow - self.Now_Month_Flow
+        if now_month_used >= 0:
+            now_month_extr = now_month_used - self.Free_Month_Flow
+            if now_month_extr > 0:
+                new_month_used_flow = self.Free_Month_Flow
+                new_month_advance_flow = now_month_extr
+                is_flow_alarm = 1
+                is_write_redis = 0
+                
+            elif now_month_extr < -self.Free_Month_Flow*0.1:
+                new_month_used_flow = now_month_used
+                new_month_advance_flow = 0
+                is_flow_alarm = 0
+                is_write_redis = 1
+                 
+            else:
+                new_month_used_flow = now_month_used
+                new_month_advance_flow = 0
+                is_flow_alarm = 1
+                is_write_redis = 1
+        else:
+            new_month_used_flow = 0
+            new_month_advance_flow = 0
+            is_flow_alarm = 0
+            is_write_redis = 1
+            
+<<<<<<< .mine
+        data = [new_begindate,new_enddate,new_month_count,new_month_flow,new_month_used_flow,new_month_advance_flow,is_flow_alarm,is_write_redis]
+        
+        '''更新uflow表相关信息'''
+        sqlOne = "update uflow set startdate=%s,enddate=%s,month_count=%s,month_flow=%s,month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid = %s"
+        param = (data[0],data[1],data[2],data[3],data[4],data[5],data[6],self.uid)
+        self.ExeMysqlCmd(sqlOne,param)
+        
+        
+        '''更新uinfo表相关信息'''
+        sqlTwo = "update uinfo set tid = %s where uid = %s"
+        param = (self.Free_TypeID,self.uid)
+        self.ExeMysqlCmd(sqlTwo,param)
+        
+        '''更新redis键uid_flow信息'''
+        self.ExeRedisCmd("%s_flow"%self.uid,data[7])
+        
+        '''发邮件通知用户已降级'''
+        SendMail(self.Email,"FallLevel",self.logger)
+=======
+    else:
+        new_month_used_flow = 0
+        new_month_advance_flow = 0
+        is_flow_alarm = 0
+        is_write_redis = 1
+    return [new_begindate,new_enddate,new_month_count,new_month_flow,new_month_used_flow,new_month_advance_flow,is_flow_alarm,is_write_redis]
+
+
+def CheckFlow(UidObj,redisconn,Mail_list):
+    uid = UidObj.Uid
+    mysqlconn = UidObj.mysqlconn
+    cursor = mysqlconn.cursor()
+    flow_info = UidObj.get_flow_info(uid)
+    daily_flow = UidObj.get_daily_flow(uid)
+    daily_flow = daily_flow/1024
+    #daily_flow = 120
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+    #today = "2013-06-24"
+    enddate = str(flow_info[1])
+    begindate = str(flow_info[0])
+    month_count = flow_info[2]
+    
+    month_flow = flow_info[3]
+    if flow_info[4] == None:
+        month_used_flow = 0
+    else:
+        month_used_flow = flow_info[4]
+    if flow_info[5] == None:
+        month_advance_flow = 0
+    else:
+        month_advance_flow = flow_info[5]
+    is_flow_alarm = flow_info[6]
+    typeid = flow_info[7]
+    if flow_info[8] == None:
+        user_email = None
+    else:
+        user_email = flow_info[8]
+        #user_email = "rli@cloudiya.com"
+    begindate_list = get_days_list(begindate,month_count)
+    if month_count == 0:
+        last_one_month = "0000-00-00"
+    else:
+        last_one_month = begindate_list[-1:]
+    subject2 = u"流量报警通知！"
+    text2 =  u'''尊敬的天空视频网用户：
+
+                     由于您本月使用的流量已经超过了购买的套餐月流量上限的90%，未防止你的视频播放中断，请尽快充值。
+
+                     温馨提示：为了更好的提供我们的视频服务，对于所有的付费套餐用户，如果您未能及时充值，我们将
+                               从您下个月的流量中借用10%来继续本月的流量使用。
+
+                     祝您使用愉快，如果您有什么建议或其他反馈请联系我们客服。邮箱：support@skygrande.com
+            '''
+    subject3 = u"流量超支通知！！！"
+    text3 = u'''尊敬的用户：
+    
+                     由于你购买的套餐流量已经超过了月流量，你的视频已经中断，请充值。
+                     祝您使用愉快，如果您有什么建议或其他反馈请联系我们客服。邮箱：tech@skygrande.com
+            '''
+    total_used_flow = month_used_flow + month_advance_flow + daily_flow
+    typeObj = TypeInfo(mysqlconn,2)
+    if today == enddate:
+        print "in the endtate mothed"
+        ext_typeinfo = typeObj.get_ext_typeinfo(uid)
+        if ext_typeinfo == []:
+            "免费用户降级"
+            data = fall_type(total_used_flow,month_flow,typeObj.flow)
+            sqlOne = "update uflow set startdate=%s,enddate=%s,month_count=%s,month_flow=%s,month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid = %s"
+            param = (data[0],data[1],data[2],data[3],data[4],data[5],data[6],uid)
+            cursor.execute(sqlOne,param)
+            mysqlconn.commit()
+            redisconn.set("%s_flow"%uid,data[7])
+            #同时更新uinfo中的套餐类型
+            sqlTwo = "update uinfo set tid = 2 where uid = %s"
+            cursor.execute(sqlTwo,uid)
+            mysqlconn.commit()
+            subject = u"套餐降级通知！"
+            text = u'''尊敬的天空视频网用户：
+>>>>>>> .r331
+
+
+    def ContinueToPay(self):
+        '''用户套餐续费'''
+        old_starttime_list = self.old_starttime.split("-")
+        old_endtime_list = self.Now_EndDate.split('-')
+        old_starttime_list[0] = str(old_endtime_list[0])
+        new_begindate = '-'.join(old_starttime_list)
+        new_enddate = self.ext_enddate
+        new_month_count = self.total_mouth - self.Now_Month_Count
+        new_month_flow = self.o_mount_flow
+        
+<<<<<<< .mine
+        now_month_used = self.Month_Sum_Flow - self.Now_Month_Flow
+        if now_month_used > 0:
+            now_month_extr = now_month_used - new_month_flow
+            if now_month_extr > new_month_flow*0.1:
+                '''now_month_used > new_month_flow*110%'''
+                new_month_used_flow = new_month_flow
+                new_month_advance_flow = now_month_extr
+                is_flow_alarm = 1
+                is_write_redis = 0 
+                SendMail(self.Email,"MonthLimit",self.logger)               
+            elif 0< now_month_extr <= new_month_flow*0.1:
+                '''new_month_flow < now_month_used <= new_month_flow*110%'''
+                new_month_used_flow = new_month_flow
+                new_month_advance_flow = now_month_extr
+                is_flow_alarm = 1
+                is_write_redis = 1 
+                SendMail(self.Email,"MonthLimit90",self.logger)               
+            elif -new_month_flow*0.1 < now_month_extr <=0 :
+                '''new_month_flow*90% < now_month_used <= new_month_flow'''
+                new_month_used_flow = now_month_used
+                new_month_advance_flow = 0
+                is_flow_alarm = 1
+                is_write_redis = 1
+                SendMail(self.Email,"MonthLimit90",self.logger)  
+            else:
+                '''now_month_used < new_month_flow*90%'''
+                new_month_used_flow = now_month_used
+                new_month_advance_flow = 0
+                is_flow_alarm = 0
+                is_write_redis = 1                
+        else:
+            '''now_month_used <= 0'''
+            new_month_used_flow = 0
+            new_month_advance_flow = 0
+            is_flow_alarm = 0
+            is_write_redis = 1
+        
+        '''更新uflow相关信息'''
+        sqlone = "update uflow set startdate=%s,enddate=%s,month_count=%s,month_flow=%s,month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid =%s"    
+        param = (new_begindate,new_enddate,new_month_count,new_month_flow,new_month_used_flow,new_month_advance_flow,is_flow_alarm,self.uid)
+        self.ExeMysqlCmd(sqlone,param)
+        
+        '''更新redis键uid_flow信息'''        
+        self.ExeRedisCmd("%s_flow"%self.uid,is_write_redis)
+                        
+        '''更新ucurrntetc表，开启续费开关'''
+        sqltwo = 'update ucurrenttc set xufei_status=1 where uid = %s' 
+        param = (uid)
+        self.ExeMysqlCmd(sqltwo,param)
+=======
+            SendMail(Mail_list,user_email,subject,text)
+        else:
+            old_starttime = str(ext_typeinfo[0])
+            ext_enddate = str(ext_typeinfo[1])
+            o_mount_flow = ext_typeinfo[2]
+            is_ext = ext_typeinfo[3]
+            total_mouth = ext_typeinfo[4]
+            if is_ext == 1 :
+                #套餐不续费,降级
+                data = fall_type(total_used_flow,month_flow,typeObj.flow)
+                sqlOne = "update uflow set startdate=%s,enddate=%s,month_count=%s,month_flow=%s,month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid = %s"
+                param = (data[0],data[1],data[2],data[3],data[4],data[5],data[6],uid)
+                cursor.execute(sqlOne,param)
+                mysqlconn.commit()
+                redisconn.set("%s_flow"%uid,data[7])
+                #同时更新uinfo中的套餐类型
+                sqlTwo = "update uinfo set tid = 2 where uid = %s"
+                cursor.execute(sqlTwo,uid)
+                mysqlconn.commit()
+                subject = u"套餐降级通知！"
+                text = u'''尊敬的天空视频网用户：
+
+                           由于你购买的套餐或者充值流量已经到期，所以我们自动将您降级为免费用户，免费用户将有2GB/月的流量使用
+                        和1GB的存储空间。如果您现在所有的视频文件所占用的存储空间超过1GB，我们将在7天后删除您的视频文件
+                        到占用存储空间不超过1GB为止。
+
+                         祝您使用愉快，如果您有什么建议或其他反馈请联系我们客服。
+ 
+                         邮箱：support@skygrande.com.
+                '''
+        
+                SendMail(Mail_list,user_email,subject,text)
+
+            else:
+                #套餐续费
+                old_starttime_list = old_starttime.split("-")
+                old_endtime_list = enddate.split('-')
+                old_starttime_list[0] = str(old_endtime_list[0])
+                new_starttime = '-'.join(old_starttime_list)
+                new_enddate = ext_enddate
+                new_month_count = total_mouth - month_count
+                 
+                sqlNine = "update uflow set startdate=%s,enddate=%s,month_count=%s,month_flow=%s,month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid =%s"
+                now_month_used = total_used_flow - month_flow
+                if now_month_used >= 0:
+                    now_month_extr = now_month_used  - o_mount_flow
+                    if now_month_extr > o_mount_flow*0.1:
+                        new_month_used_flow = o_mount_flow
+                        new_month_advance_flow = now_month_extr
+                        is_flow_alarm = 1
+                        is_write_redis = 0 
+                        SendMail(Mail_list,user_email,subject3,text3)               
+                    elif 0< now_month_extr <= o_mount_flow*0.1:
+                        new_month_used_flow = o_mount_flow
+                        new_month_advance_flow = now_month_extr
+                        is_flow_alarm = 1
+                        is_write_redis = 1 
+                        SendMail(Mail_list,user_email,subject2,text2)               
+                    elif -o_mount_flow*0.1 < now_month_extr <=0 :
+                        new_month_used_flow = now_month_used
+                        new_month_advance_flow = 0
+                        is_flow_alarm = 1
+                        is_write_redis = 1
+                        SendMail(Mail_list,user_email,subject2,text2)  
+                    else:
+                        new_month_used_flow = now_month_used
+                        new_month_advance_flow = 0
+                        is_flow_alarm = 0
+                        is_write_redis = 1                
+                else: 
+                    new_month_used_flow = 0
+                    new_month_advance_flow = 0
+                    is_flow_alarm = 0
+                    is_write_redis = 1
+                    
+                print new_month_used_flow,new_month_advance_flow,is_flow_alarm,is_write_redis
+                param = (new_starttime,new_enddate,new_month_count,o_mount_flow,new_month_used_flow,new_month_advance_flow,is_flow_alarm,uid)
+                cursor.execute(sqlNine,param)
+                mysqlconn.commit()  
+                redisconn.set("%s_flow"%uid,is_write_redis)                
+                #跟新ucurrntetc表，开启续费开关
+                sqlTen = 'update ucurrenttc set xufei_status=1 where uid = %s' 
+                param = (uid)
+                cursor.execute(sqlTen,param)
+                mysqlconn.commit()
+                
+    elif str(today) in begindate_list:
+        "月初"
+        print "in the month begging methed"
+        if typeid == 2 and month_count == 0:
+            "免费模式中的月初初始化，送2G流量"
+            #当日使用流量+月已经使用流量+额外使用流量的值-2G 获得本月初始化后可以使用的流量
+            if month_advance_flow >0:
+                pass
+            else:
+                
+                sqlThree = "update uflow set month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid = %s "
+                now_month_used = total_used_flow - month_flow 
+                now_month_extr = now_month_used - typeObj.flow 
+                if now_month_used >= 0:
+                    if now_month_extr >= 0:
+                        new_month_used_flow = typeObj.flow
+                        new_month_advance_flow = now_month_extr
+                        is_flow_alarm = 1
+                        is_write_redis = 0
+                        SendMail(Mail_list,user_email,subject3,text3)
+                    elif now_month_extr < -typeObj.flow*0.1:
+                        new_month_used_flow = now_month_used
+                        new_month_advance_flow = 0
+                        is_flow_alarm = 0
+                        is_write_redis = 1
+                    
+                    else:
+                        new_month_used_flow = now_month_used
+                        new_month_advance_flow = 0
+                        is_flow_alarm = 1
+                        is_write_redis = 1
+                        SendMail(Mail_list,user_email,subject2,text2)
+                else:
+                    new_month_used_flow = 0
+                    new_month_advance_flow = 0
+                    is_flow_alarm = 0
+                    is_write_redis =1                
+            
+                param = (new_month_used_flow,new_month_advance_flow,is_flow_alarm,uid)
+                cursor.execute(sqlThree,param)
+                mysqlconn.commit() 
+                redisconn.set("%s_flow"%uid,is_write_redis)
+                
+        elif typeid == 2 and month_count != 0:
+            now_month_used = total_used_flow - month_flow 
+            sqlFour = "update uflow set month_flow=%s,month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid =%s"           
+            if now_month_used > 0:
+                #降级
+                data = fall_type(total_used_flow,month_flow,typeObj.flow)
+                sqlOne = "update uflow set startdate=%s,enddate=%s,month_count=%s,month_flow=%s,month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid = %s"
+                param = (data[0],data[1],data[2],data[3],data[4],data[5],data[6],uid)
+                cursor.execute(sqlOne,param)
+                mysqlconn.commit()
+                redisconn.set("%s_flow"%uid,data[7])
+                #同时更新uinfo中的套餐类型
+                sqlTwo = "update uinfo set tid = 2 where uid = %s"
+                cursor.execute(sqlTwo,uid)
+                mysqlconn.commit()  
+                subject = u"套餐降级通知！！！"
+                text = u'''尊敬的天空视频网用户：
+>>>>>>> .r331
+
+
+    def FreePackageInMonthMiddle(self):
+        '''免费套餐在月中'''
+        now_month_used = self.Month_Sum_Flow - self.Now_Month_Flow
+        if now_month_used >= 0:
+            new_month_used_flow = self.Now_Month_Flow
+            new_month_advance_flow = now_month_used
+            is_flow_alarm = 1
+            is_write_redis = 0
+            SendMail(self.Email,"MonthLimit",self.logger)
+        elif now_month_used < -self.Now_Month_Flow*0.1:
+            new_month_used_flow = self.Month_Sum_Flow
+            new_month_advance_flow = 0
+            is_flow_alarm = 0
+            is_write_redis = 1
+        else:
+            new_month_used_flow = self.Month_Sum_Flow
+            new_month_advance_flow = 0
+            is_flow_alarm = 1
+            is_write_redis = 1  
+            SendMail(self.Email,"MonthLimit90",self.logger)     
+            
+        '''更新uflow相关信息'''    
+        sql = "update uflow set month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid =%s"
+        param = (new_month_used_flow,new_month_advance_flow,is_flow_alarm,self.uid)
+        self.ExeMysqlCmd(sql,param)
+        
+        '''更新redis键uid_flow信息'''        
+        self.ExeRedisCmd("%s_flow"%self.uid,is_write_redis)    
+    
+    def RechargePackageInMonthMiddle(self):
+        '''充值套餐在月中'''
+        now_month_used = self.Month_Sum_Flow - self.Now_Month_Flow
+        if now_month_used >= 0:
+            '''充值流量全部用完,降级'''
+            self.FallLevel()          
+        else:
+            if self.Month_Sum_Flow > self.Now_Month_Flow*0.9 :
+                new_month_used_flow = self.Month_Sum_Flow
+                new_month_advance_flow = 0
+                is_flow_alarm = 1
+                is_write_redis = 1
+                SendMail(self.Email,"MonthLimit90",self.logger)
+            else:
+                new_month_used_flow = self.Month_Sum_Flow
+                new_month_advance_flow = 0
+                is_flow_alarm = 0
+                is_write_redis = 1
+            
+            '''更新uflow相关信息''' 
+            sql = "update uflow set month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid =%s"
+            param = (new_month_used_flow,new_month_advance_flow,is_flow_alarm,self.uid)
+            self.ExeMysqlCmd(sql,param)
+
+            '''更新redis键uid_flow信息'''        
+            self.ExeRedisCmd("%s_flow"%self.uid,is_write_redis)   
+
+
+    def PayPackageInMonthMiddle(self):
+        '''付费套餐在月中'''
+        now_month_used = self.Month_Sum_Flow - self.Now_Month_Flow
+        if now_month_used > self.Now_Month_Flow*0.1:
+            '''self.Month_Sum_Flow > self.Now_Month_Flow*110%'''
+            new_month_used_flow = self.Now_Month_Flow
+            new_month_advance_flow = now_month_used
+            is_flow_alarm = 1
+            is_write_redis = 0
+            SendMail(self.Email,"MonthLimit",self.logger)       
+        elif 0 < now_month_used <= self.Now_Month_Flow*0.1:
+            '''self.Now_Month_Flow < self.Month_Sum_Flow <= self.Now_Month_Flow*110%'''
+            new_month_used_flow = self.Now_Month_Flow
+            new_month_advance_flow = now_month_used
+            is_flow_alarm = 1
+            is_write_redis = 1
+            SendMail(self.Email,"MonthLimit90",self.logger)
+        elif -self.Now_Month_Flow*0.1 < now_month_used <=0:
+            '''self.Now_Month_Flow*90% < self.Month_Sum_Flow <= self.Now_Month_Flow'''
+            new_month_used_flow = self.Month_Sum_Flow
+            new_month_advance_flow = 0
+            is_flow_alarm = 1
+            is_write_redis = 1
+            SendMail(self.Email,"MonthLimit90",self.logger)
+        else:
+            '''self.Month_Sum_Flow < self.Now_Month_Flow*90%'''
+            new_month_used_flow = self.Month_Sum_Flow
+            new_month_advance_flow = 0
+            is_flow_alarm = 0
+            is_write_redis = 1      
+        
+        '''更新uflow相关信息''' 
+        sql = "update uflow set month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid =%s"         
+        param = (new_month_used_flow,new_month_advance_flow,is_flow_alarm,self.uid)
+        self.ExeMysqlCmd(sql,param)
+
+        '''更新redis键uid_flow信息'''        
+        self.ExeRedisCmd("%s_flow"%self.uid,is_write_redis)   
+           
+    def FreePackageInMonthFirst(self):
+        '''免费套餐在月初'''
+        now_month_used = self.Month_Sum_Flow - self.Now_Month_Flow
+        now_month_extr = now_month_used - self.Now_Month_Flow 
+        if now_month_used >= 0:
+            if now_month_extr >= 0:
+                new_month_used_flow = self.Now_Month_Flow 
+                new_month_advance_flow = now_month_extr
+                is_flow_alarm = 1
+                is_write_redis = 0
+                SendMail(self.Email,"MonthLimit",self.logger)
+            elif now_month_extr < -self.Now_Month_Flow*0.1:
+                new_month_used_flow = now_month_used
+                new_month_advance_flow = 0
+                is_flow_alarm = 0
+                is_write_redis = 1
+            else:
+                new_month_used_flow = now_month_used
+                new_month_advance_flow = 0
+                is_flow_alarm = 1
+                is_write_redis = 1
+                SendMail(self.Email,"MonthLimit90",self.logger)
+        else:
+            new_month_used_flow = 0
+            new_month_advance_flow = 0
+            is_flow_alarm = 0
+            is_write_redis =1                
+        
+        '''更新uflow相关信息'''
+        sql = "update uflow set month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid = %s "
+        param = (new_month_used_flow,new_month_advance_flow,is_flow_alarm,self.uid)
+        self.ExeMysqlCmd(sql,param)
+
+        '''更新redis键uid_flow信息'''        
+        self.ExeRedisCmd("%s_flow"%self.uid,is_write_redis)
+        
+    def RechargePackageInMonthFirst(self):
+        '''充值套餐在月初'''
+        now_month_used = self.Month_Sum_Flow - self.Now_Month_Flow
+               
+        if now_month_used >= 0:
+            '''充值流量用完,降级'''
+            self.FallLevel()
+        else:
+            new_month_flow = self.Now_Month_Flow - self.Month_Sum_Flow 
+            new_month_used_flow = 0
+            new_month_advance_flow = 0
+            is_flow_alarm = 0
+            is_write_redis = 1
+            if self.Month_Sum_Flow >= self.Now_Month_Flow*0.9:
+                is_flow_alarm = 1
+                SendMail(self.Email,"MonthLimit90",self.logger)
+                
+            '''更新uflow相关信息'''
+            sql = "update uflow set month_flow=%s,month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid =%s"    
+            param = (new_month_flow,new_month_used_flow,new_month_advance_flow,is_flow_alarm,self.uid)
+            self.ExeMysqlCmd(sql,param)
+            
+            '''更新redis键uid_flow信息'''        
+            self.ExeRedisCmd("%s_flow"%self.uid,is_write_redis)
+                                                                   
+    def PayPackageInMonthFirst(self):
+        '''付费套餐到月初'''
+        now_month_used = self.Month_Sum_Flow - self.Now_Month_Flow
+        if now_month_used > 0:
+            now_month_extr = now_month_used  - self.Now_Month_Flow
+            if now_month_extr > self.Now_Month_Flow*0.1:
+                '''now_month_used > self.Now_Month_Flow*110%'''
+                new_month_used_flow = self.Now_Month_Flow
+                new_month_advance_flow = now_month_extr
+                is_flow_alarm = 1
+                is_write_redis = 0 
+                SendMail(self.Email,"MonthLimit",self.logger)            
+            elif 0< now_month_extr <= self.Now_Month_Flow*0.1:
+                '''self.Now_Month_Flow < now_month_used <= self.Now_Month_Flow*110% '''
+                new_month_used_flow = self.Now_Month_Flow
+                new_month_advance_flow = now_month_extr
+                is_flow_alarm = 1
+                is_write_redis = 1 
+                SendMail(self.Email,"MonthLimit90",self.logger)              
+            elif -self.Now_Month_Flow*0.1 < now_month_extr <=0:
+                '''self.Now_Month_Flow*90% < now_month_used <= self.Now_Month_Flow '''
+                new_month_used_flow = now_month_used
+                new_month_advance_flow = 0
+                is_flow_alarm = 1
+                is_write_redis = 1
+                SendMail(self.Email,"MonthLimit90",self.logger)  
+            else:
+                new_month_used_flow = now_month_used
+                new_month_advance_flow = 0
+                is_flow_alarm = 0
+                is_write_redis = 1                
+        else: 
+            new_month_used_flow = 0
+            new_month_advance_flow = 0
+            is_flow_alarm = 0
+            is_write_redis = 1
+        
+        '''更新uflow相关信息'''    
+        sql = "update uflow set month_used_flow=%s,month_advance_flow=%s,is_flow_alarm=%s where uid =%s"
+        param = (new_month_used_flow,new_month_advance_flow,is_flow_alarm,self.uid)
+        self.ExeMysqlCmd(sql,param)
+ 
+        '''更新redis键uid_flow信息'''        
+        self.ExeRedisCmd("%s_flow"%self.uid,is_write_redis)
+    
+    def MainHandle(self):
+        
+        '''用户套餐信息'''
+        self.UserPackageInfo()
+        '''免费套餐信息'''
+        self.FreeUserPackageInfo()
+        '''用户月初日期列表'''
+        BeginDate_List =  get_days_list(self.Now_StartDate,self.Now_Month_Count)
+        
+        
+        # ----------------------------------
+        # 付费套餐用户套餐到期,分两种情况：
+        #    如有套餐续费,继续该用户购买的原始套餐
+        #    如无套餐续费,降级到免费用户
+        # 充值套餐用户套餐到期,分两种情况：
+        #    如有套餐续费,继续该用户购买的原始套餐
+        #    如无套餐续费,降级到免费用户
+        # ----------------------------------
+        if self.today == self.Now_EndDate:
+            self.logger.debug("user %s handle step is in enddate"%self.uid)
+            if self.Now_TypeID == self.Free_TypeID:
+                '''充值套餐到期，降级'''
+                self.FallLevel()
+            else:
+                self.UserPackageExtInfo()
+                if self.is_ext == 1:
+                    '''套餐不续费,降级'''
+                    self.FallLevel()
+                else:
+                    '''套餐续费'''
+                    self.ContinueToPay()
+                
+        
+        # ---------------------------------
+        # 付费套餐用户,充值用户,免费套餐用户到月初
+        #----------------------------------
+        if self.today in BeginDate_List:
+            self.logger.debug("user %s handle step is month first"%self.uid)
+            if self.Now_TypeID == self.Free_TypeID and self.Now_Month_Count == 0:
+                '''免费套餐到月初'''
+                self.FreePackageInMonthFirst()
+            elif self.Now_TypeID == self.Free_TypeID and self.Now_Month_Count != 0:
+                '''充值套餐到月初'''
+                self.RechargePackageInMonthFirst()
+            else:
+                '''付费套餐到月初'''
+                self.PayPackageInMonthFirst()
+                
+                
+        # ---------------------------------
+        # 付费套餐用户,充值用户,免费套餐用户在月中
+        # ---------------------------------    
+        if self.today not in BeginDate_List:
+            self.logger.debug("user %s handle step is month middle"%self.uid)
+            if self.Now_TypeID == self.Free_TypeID and self.Now_Month_Count == 0:
+                '''免费套餐在月中'''
+                self.FreePackageInMonthMiddle()
+            elif self.Now_TypeID == self.Free_TypeID and self.Now_Month_Count != 0:
+                '''充值套餐在月中,注：充值套餐用户TypeID和免费套餐用户TypeID一样'''
+                self.RechargePackageInMonthMiddle()
+            else:
+                '''付费套餐在月中'''
+                self.PayPackageInMonthMiddle()
+                
+        
+
+try:
+    Config = HandleConfig()
+
+    logger = getLog("Step8",logfile=Config.LogFile,loglevel=Config.LogLevel)
+    
+    logger.info("Step8 Handle Start")
+    
+<<<<<<< .mine
+    datadate = Config.date
+
+=======
+    def run(self):
+        while True:
+                    
+            uid = self.queue.get()
+                    
+            userObj = UidInfo(self.mysql_conn,self.mongoconn,uid)
+            
+            CheckFlow(userObj,self.redata,Mail_list)
+            
+            self.queue.task_done()
+                     
+def main():
+    Config = HandleConfig()
+>>>>>>> .r331
+    redispool = redis.ConnectionPool(host=Config.RedisIp,port=6379,db=0)
+    redata = redis.Redis(connection_pool=redispool)    
+    
+    mongoconn = MongoClient(Config.MongodbIp,27017)
+    
+    mysql_conn = MySQLdb.connect(host=Config.MysqldbIp,user=Config.MysqlUser,port=Config.MysqldbPort,passwd=Config.MysqlPassword,db=Config.MysqlDbname,charset="utf8")
+<<<<<<< .mine
+=======
+
+    logger = getLog("Step6",logfile=Config.LogFile,loglevel=Config.LogLevel)
+    logger.info("Step6 Handle Start")
+    
+    set_alluser = redata.smembers("user_info")
+    if redata.exists("CheckFlow_User"):
+        checked_user = redata.smembers("CheckFlow_User")
+        set_user = set_alluser - checked_user
+        list_user = list(set_user)
+    else:
+        list_user = list(set_alluser)
+        
+    for i in list_user:
+        userObj = UidInfo(mysql_conn,mongoconn,i)
+        CheckFlow(userObj,redata,Mail_list)   
+        redata.sadd("CheckFlow_User",i)
+    
+    
+    if len(redata.smembers("CheckFlow_User")) == len(set_alluser):
+        logger.info("Step6 Handle End")
+        redata.delete("CheckFlow_User")
+    else:
+        logger.error("Step6 Handel error,please run it again!!!!")
+    
+if __name__ == "__main__":
+    main()
+    #Config = HandleConfig()
+    #redispool = redis.ConnectionPool(host=Config.RedisIp,port=6379,db=0)
+    #redata = redis.Redis(connection_pool=redispool)    
+    #mongoconn = MongoClient(Config.MongodbIp,27017)
+    #mysql_conn = MySQLdb.connect(host=Config.MysqldbIp,user=Config.MysqlUser,port=Config.MysqldbPort,passwd=Config.MysqlPassword,db=Config.MysqlDbname,charset="utf8")
+
+    #logger = getLog("Step5",logfile=Config.LogFile,loglevel=Config.LogLevel)
+    #logger.info("Step5 Handle Start")
+    
+    #list_user = list(redata.smembers("user_info"))
+    #for i in list_user:
+    #    userObj = UidInfo(mysql_conn,mongoconn,i)
+    #    CheckFlow(userObj,redata,Mail_list)
+    #list_user = ["l123"]
+    #logger = getLog("Step5",logfile=Config.LogFile,loglevel=Config.LogLevel)
+    #logger.info("Step5 Handle Start")
+>>>>>>> .r331
+        
+<<<<<<< .mine
+    # ----
+    set_alluser = redata.smembers("user_info")
+    if redata.exists("CheckFlow_User"):
+        checked_user = redata.smembers("CheckFlow_User")
+        set_user = set_alluser - checked_user
+        list_user = list(set_user)
+    else:
+        list_user = list(set_alluser)
+       
+    for i in list_user:
+        CheckObj = CheckUserPackage(i,logger,datadate,redata,mongoconn,mysql_conn)
+        CheckObj.MainHandle()
+        redata.sadd("CheckFlow_User",i)
+   
+    if len(redata.smembers("CheckFlow_User")) == len(set_alluser):
+        logger.info("Step8 Handle End")
+        redata.delete("CheckFlow_User")
+    else:
+        logger.error("Step8 Handel error,please run it again!!!!")
+    # ----
+    
+except Exception,e:
+    logger.error(e)
+    sys.exit(Config.EX_CODE_2)
+    
+    =======
+    #datadate = Config.date    
+    #queue = Queue.Queue(0)
+        
+    #for i in range(Config.workers):
+    #    worker_obj = ChechFlowHandle(datadate,queue,mongoconn,redata,Config,logger)
+    #    worker_obj.setDaemon(True)
+    #    worker_obj.start()
+        
+    #for item in list_user:
+    #    print item
+    #    queue.put(item)
+        
+    #queue.join()
+    #time.sleep(10)
+>>>>>>> .r331

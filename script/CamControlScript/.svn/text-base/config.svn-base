@@ -1,0 +1,9 @@
+database=68baobao
+password=c10udiya
+user=cloudiya
+host=10.2.10.12
+
+rip=10.2.10.19
+rport=6379
+
+email=linux@cloudiya.com

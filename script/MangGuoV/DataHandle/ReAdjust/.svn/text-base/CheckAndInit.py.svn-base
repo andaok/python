@@ -1,0 +1,145 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+
+"""
+Created on Jan 9, 2013
+
+@author: wye
+
+Copyright @ 2012 - 2013  Cloudiya Tech . Inc 
+
+"""
+
+# --/
+# 
+#      CheckAndInit.py是整个批处理的第一步 
+#      
+#      处理方式：
+#         检查整个程序运行所需的数据是否存在于redis中,所需数据key为"loadtable","playtable","endlist","regiontable","user_info"不存在则退出.
+#         存在则重命名以下key：
+#                   loadtable   -> T_loadtable_$date
+#                   playtable   -> T_playtable_$date
+#                   endlist     -> T_endlist_$date
+#                   regiontable -> T_regiontable_$date
+#
+#      
+# --/
+
+import sys
+import redis
+import Queue
+import time
+import MySQLdb
+import socket
+from pymongo import MongoClient
+from PubMod import getLog
+from PubMod import HandleConfig
+from HandleAction import HandleUserinfo
+
+# --/
+#     基础数据是否存在于redis
+# --/
+
+def isExists(logger,redpipe):
+    redpipe.exists("loadtable")
+    redpipe.exists("playtable")
+    redpipe.exists("endlist")
+    redpipe.exists("regiontable")
+    redpipe.exists("user_info")
+    
+    for bvalue in redpipe.execute():
+        if bvalue == False:
+            return False
+    return True
+
+# --/
+#     相关服务是否可用
+#     mongodb,redis,mysql
+# --/
+
+def checkService(logger,Config):
+    tmpdict = {}
+    tmpdict[Config.RedisIp] = Config.RedisPort
+    tmpdict[Config.MongodbIp] = Config.MongodbPort
+    tmpdict[Config.MysqldbIp] = Config.MysqldbPort
+    tmpdict[Config.HdfsHost] = Config.HdfsPort
+    
+    for k,v in tmpdict.items():
+        s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        try:
+            s.connect((k,int(v)))
+            s.settimeout(1)
+            #s.shutdown(2)
+        except Exception,e:
+            logger.error("Don't connect to %s:%s , %s "%(k,v,e))
+            sys.exit(Config.EX_CODE_1)
+        finally:
+            s.close()
+
+# --/
+#     重新命名基础数据key名称
+# --/
+
+def handleInit(redpipe):
+    
+    redpipe.multi()
+    redpipe.renamenx("loadtable","T_loadtable_%s"%(datadate))
+    redpipe.renamenx("playtable","T_playtable_%s"%(datadate))
+    redpipe.renamenx("endlist","T_endlist_%s"%(datadate))
+    redpipe.renamenx("regiontable","T_regiontable_%s"%(datadate))
+    
+
+try:
+    Config = HandleConfig()
+
+    logger = getLog("Step1",logfile=Config.LogFile,loglevel=Config.LogLevel)
+    
+    logger.info("Step1 Handle Start")
+    
+    checkService(logger,Config)
+
+    datadate = Config.date
+    
+    redispool = redis.ConnectionPool(host=Config.RedisIp,port=6379,db=0)
+    redata = redis.Redis(connection_pool=redispool)
+    redpipe = redata.pipeline() 
+        
+    if isExists(logger,redpipe):
+        for bvalue in redata.transaction(handleInit,"loadtable","playtable","endlist","regiontable"):
+            if bvalue == False:
+                logger.error("Rename keys(loadtable,playtable,endlist,regiontable) fail")
+                sys.exit(Config.EX_CODE_1)
+    else:
+        logger.error("Does not satisfy the data processing requirements")
+        sys.exit(Config.EX_CODE_1)
+
+    #验证该日期数据是否已被处理
+    if redata.hexists("checkdate",datadate):
+        logger.error("The day the data has been processed")
+        sys.exit(Config.EX_CODE_1)
+    else:
+        redata.hset("checkdate",datadate,1)
+    
+    #添加当天日期到全局日期列表
+    redata.rpush("date",datadate)
+    
+    #添加当天日期到uid_rdate
+    queue = Queue.Queue(0)
+    for i in range(Config.workers):
+        worker_obj = HandleUserinfo(queue,logger,datadate,Config)
+        worker_obj.setDaemon(True) 
+        worker_obj.start()
+   
+    user_list = list(redata.smembers("user_info"))
+    for item in user_list:
+        queue.put(item)
+        
+    queue.join()
+    time.sleep(5)
+    
+    logger.info("Step1 Handle Complete")
+    
+except Exception,e:
+    logger.error(e)
+    sys.exit(Config.EX_CODE_1)
+    

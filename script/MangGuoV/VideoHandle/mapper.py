@@ -1,0 +1,420 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+
+'''
+Created on Nov 20, 2012
+
+@author: wye
+
+Copyright @ 2011 - 2014  Cloudiya Tech. Inc 
+'''
+
+"""
+OOP of mapper code for Video handle  
+"""
+"""
+带宽 - 码率 - 分辨率 
+手机 - 250 - 427x240
+普通 - 400 - 640x360
+清晰 - 750 - 854x480
+高清 - 1500+ 1280x720
+真高清-4000+ 1920x1080 
+"""
+
+import os
+import sys
+import pickle
+import random
+import string
+import logging
+import operator
+import baseclass
+import subprocess
+
+######################################
+
+class mapCmdOutput():
+    
+    """  Video mapper handle command output  """
+    
+    def __init__(self, info_dict, hadoopinfo_dict, seg_list, logger):
+         
+        self.VideoFileNameAlias = info_dict['name']
+        self.LocalTmpName = self.VideoFileNameAlias+"_"+"".join(random.choice(string.ascii_letters + string.digits) for x in range(6))
+        self.VideoFrameWidth = int(info_dict['width'])
+        self.VideoFrameHeight = int(info_dict['height'])
+        self.VideoBitRate = int(info_dict['vbitrate'])
+        self.AudioBitRate = int(info_dict['abitrate'])
+        
+        self.BlockDuration = info_dict['blockduration']
+        self.IsWaterMark = info_dict['iswatermark']
+        self.IsOverWrite = info_dict['isoverwrite']        
+        if self.IsWaterMark:
+            self.LeftPixels = int(info_dict['leftpixels'])
+            self.UpPixels = int(info_dict['uppixels'])
+            self.LogoName = "logo.%s" % (info_dict['logoextname'])
+        
+        self.HadoopNNAddr = hadoopinfo_dict["HadoopNNAddr"]
+        self.HadoopBinDir = hadoopinfo_dict["HadoopBinDir"]
+        
+        self.NewWmWidth = self.setWmNewWidth(self.VideoFrameHeight)
+        
+        self.SegVideoNameList = seg_list
+        
+        self.logger = logger
+        
+        self.FFmpegCmdList = []
+        
+        self.HadoopCmdList = []
+        
+    def chkVideoBitRate(self):
+        
+        if self.VideoFrameHeight <= 300:
+            if self.VideoBitRate > int(self.VideoFrameHeight*250/240):
+                self.VideoBitRate240P = 250
+            else:
+                self.VideoBitRate240P = self.VideoBitRate
+        
+        if 300 < self.VideoFrameHeight <= 420:
+            if self.VideoBitRate > int(self.VideoFrameHeight*400/360):
+                self.VideoBitRate360P = 400
+            else:
+                self.VideoBitRate360P = self.VideoBitRate
+                
+            self.VideoBitRate240P = int(240*self.VideoBitRate360P/self.VideoFrameHeight)
+            
+        if 420 < self.VideoFrameHeight <= 600:
+            if self.VideoBitRate > int(self.VideoFrameHeight*750/480):
+                self.VideoBitRate480P = 750
+            else:
+                self.VideoBitRate480P = self.VideoBitRate
+                
+            self.VideoBitRate360P = int(360*self.VideoBitRate480P/self.VideoFrameHeight)
+            self.VideoBitRate240P = int(240*self.VideoBitRate480P/self.VideoFrameHeight)
+        
+        if 600 < self.VideoFrameHeight <= 1000:
+            if self.VideoBitRate > int(self.VideoFrameHeight*1500/720):
+                self.VideoBitRate720P = 1500
+            else:
+                self.VideoBitRate720P = self.VideoBitRate
+            
+            self.VideoBitRate480P = int(480*self.VideoBitRate720P/self.VideoFrameHeight)    
+            self.VideoBitRate360P = int(360*self.VideoBitRate720P/self.VideoFrameHeight)
+            self.VideoBitRate240P = int(240*self.VideoBitRate720P/self.VideoFrameHeight)
+        
+        if self.VideoFrameHeight > 1000:
+            if self.VideoBitRate > int(self.VideoFrameHeight*2000/1080):
+                self.VideoBitRate1080P = 2000
+            else:
+                self.VideoBitRate1080P = self.VideoBitRate
+            
+            self.VideoBitRate720P = int(720*self.VideoBitRate1080P/self.VideoFrameHeight)    
+            self.VideoBitRate480P = int(480*self.VideoBitRate1080P/self.VideoFrameHeight)    
+            self.VideoBitRate360P = int(360*self.VideoBitRate1080P/self.VideoFrameHeight)
+            self.VideoBitRate240P = int(240*self.VideoBitRate1080P/self.VideoFrameHeight)
+        
+    def setWmNewWidth(self, nameflag):
+        ReferResolution = 240
+        ReferWidth = 30
+        NewWidth = int(ReferWidth*int(nameflag)/ReferResolution)
+        return NewWidth
+        
+    def getKeyFrameTimeStamps(self):
+        if operator.mod(self.BlockDuration,2) != 0:
+            self.BlockDuration = self.BlockDuration +1
+        tstr = "0"
+        for i in range(2,self.BlockDuration+2,2):
+            tstr = tstr + ",%s"%(i)
+        return tstr
+        
+    def getNewFrameWidth(self,NewFrameHeight):
+        newwidth = int(self.VideoFrameWidth*int(NewFrameHeight)/self.VideoFrameHeight)
+        if operator.mod(newwidth, 2) == 0:
+            return newwidth
+        else:
+            return newwidth+1
+        
+    def setKeyFrames(self,nameflag,newbitrate):
+        setKFCmd = "ffmpeg -y -threads 0 -i /tmp/%s/avfiles/%s -acodec copy -vcodec h264 -pix_fmt yuv420p -profile:v baseline -force_key_frames %s -b:v %sk -s %sx%s -strict -2  /tmp/%s/avfiles/%s.%s"
+        for segname in self.SegVideoNameList:
+            cmdstr = setKFCmd%(self.LocalTmpName,segname,self.getKeyFrameTimeStamps(),newbitrate,self.VideoFrameWidth,self.VideoFrameHeight,self.LocalTmpName,nameflag,segname.split('.')[0]+".mp4")
+            self.FFmpegCmdList.append(cmdstr)
+    
+    def addWm(self,wmwidth,nameflag,newbitrate):
+        ## addWmCmd = "ffmpeg -y -threads 0 -i /tmp/%s/avfiles/%s -acodec copy -vcodec h264 -pix_fmt yuv420p -profile:v baseline -force_key_frames %s -b:v %sk -vf \"movie=/tmp/%s/%s, scale=%s:-1 [wm];[in][wm] overlay=%s:%s [out]\" /tmp/%s/avfiles/%s.%s"
+        addWmCmd = "ffmpeg -y -threads 0 -i /tmp/%s/avfiles/%s -acodec copy -vcodec h264 -pix_fmt yuv420p -profile:v baseline -force_key_frames %s -b:v %sk -vf \"movie=/tmp/%s/%s, scale=-1:%s [wm];[in][wm] overlay=%s:%s [out]\" /tmp/%s/avfiles/%s.%s"
+        for segname in self.SegVideoNameList:
+            cmdstr = addWmCmd%(self.LocalTmpName,segname,self.getKeyFrameTimeStamps(),newbitrate,self.LocalTmpName,self.LogoName,int(wmwidth),self.LeftPixels,self.UpPixels,self.LocalTmpName,nameflag,segname.split('.')[0]+".mp4")   
+	    logger.info("add water make command is : %s" % cmdstr)
+            self.FFmpegCmdList.append(cmdstr)
+            
+    def addWmTcode(self,newbitrate,newwidth,height,wmwidth,nameflag):
+        ## addWmTcodeCmd = "ffmpeg -y -threads 0 -i /tmp/%s/avfiles/%s -vcodec h264 -pix_fmt yuv420p -profile:v baseline -force_key_frames %s -b:v %sk -s %sx%s -acodec copy -vf \"movie=/tmp/%s/%s, scale=%s:-1 [wm];[in][wm] overlay=%s:%s [out]\" /tmp/%s/avfiles/%s.%s"
+        addWmTcodeCmd = "ffmpeg -y -threads 0 -i /tmp/%s/avfiles/%s -vcodec h264 -pix_fmt yuv420p -profile:v baseline -force_key_frames %s -b:v %sk -s %sx%s -acodec copy -vf \"movie=/tmp/%s/%s, scale=-1:%s [wm];[in][wm] overlay=%s:%s [out]\" /tmp/%s/avfiles/%s.%s"
+        #newwidth = self.getNewFrameWidth(height)
+        for segname in self.SegVideoNameList:
+            cmdstr = addWmTcodeCmd%(self.LocalTmpName,segname,self.getKeyFrameTimeStamps(),newbitrate,newwidth,height,self.LocalTmpName,self.LogoName,wmwidth,self.LeftPixels,self.UpPixels,self.LocalTmpName,nameflag,segname.split('.')[0]+".mp4") 
+            self.FFmpegCmdList.append(cmdstr)
+        
+    def tranCode(self,newbitrate,newwidth,height,nameflag):
+        tranCodeCmd = "ffmpeg -y -threads 0 -i /tmp/%s/avfiles/%s -vcodec h264 -pix_fmt yuv420p -profile:v baseline -force_key_frames %s -b:v %sk -s %sx%s -acodec copy /tmp/%s/avfiles/%s.%s"
+        newwidth = self.getNewFrameWidth(height)
+        for segname in self.SegVideoNameList:
+            cmdstr = tranCodeCmd%(self.LocalTmpName,segname,self.getKeyFrameTimeStamps(),newbitrate,newwidth,height,self.LocalTmpName,nameflag,segname.split('.')[0]+".mp4")
+            self.FFmpegCmdList.append(cmdstr)
+        
+    def uploadData(self):
+        uploadDataCmd = "%s fs -put /tmp/%s/avfiles/*.part* hdfs://%s/%s/avfiles/"
+        cmdstr = uploadDataCmd%(self.HadoopBinDir,self.LocalTmpName,self.HadoopNNAddr,self.VideoFileNameAlias)
+        self.HadoopCmdList.append(cmdstr)
+
+    #Start Output Commands   
+    def initMapperEnv(self):
+        CmdList = ["mkdir -p /tmp/%s/avfiles"%(self.LocalTmpName)]
+        return CmdList
+    
+    def downVideoSegs(self):
+        CmdList = []
+        for segname in self.SegVideoNameList:
+            cmdstr = "%s fs -get hdfs://%s/%s/avfiles/%s /tmp/%s/avfiles/"%(self.HadoopBinDir,self.HadoopNNAddr,self.VideoFileNameAlias,segname,self.LocalTmpName)
+            CmdList.append(cmdstr)
+        return CmdList
+    
+    def downWaterMarkPic(self):
+        if self.IsWaterMark:
+            CmdList = ["%s fs -get hdfs://%s/%s/%s /tmp/%s/%s"%(self.HadoopBinDir,self.HadoopNNAddr,self.VideoFileNameAlias,self.LogoName,self.LocalTmpName,self.LogoName)]
+            return CmdList
+        else:
+            return []
+    
+    def addWMarkORTCodeCmd(self):
+        self.chkVideoBitRate()
+        #加水印转码
+        if self.IsWaterMark:
+            if self.VideoFrameHeight <= 300:
+                #只加水印,不转码,生成有水印240p段.
+                self.addWm(self.NewWmWidth,"240p",self.VideoBitRate240P)
+            
+            if 300 < self.VideoFrameHeight <= 420:
+                #只加水印,不转码,生成有水印360p段.
+                self.addWm(self.NewWmWidth,"360p",self.VideoBitRate360P)
+                
+                #加水印且转码成240p,生成有水印240p段
+                newwidth = self.getNewFrameWidth("240")
+                self.addWmTcode(self.VideoBitRate240P,newwidth,240,self.NewWmWidth,"240p")
+                
+            if 420 < self.VideoFrameHeight <= 600:
+                #只加水印,不转码,生成有水印480p段.
+                self.addWm(self.NewWmWidth,"480p",self.VideoBitRate480P)
+        
+                #加水印且转码成360p,生成有水印360p段
+                newwidth = self.getNewFrameWidth("360")
+                self.addWmTcode(self.VideoBitRate360P,newwidth,360,self.NewWmWidth,"360p")
+                
+                #加水印且转码成240p,生成有水印240p段
+                newwidth = self.getNewFrameWidth("240")
+                self.addWmTcode(self.VideoBitRate240P,newwidth,240,self.NewWmWidth,"240p")
+                                
+            if 600 < self.VideoFrameHeight <= 1000:
+                #只加水印,不转码,生成有水印720p段.
+                self.addWm(self.NewWmWidth,"720p",self.VideoBitRate720P)
+                
+                #加水印且转码成480p,生成有水印480p段
+                newwidth = self.getNewFrameWidth("480")
+                self.addWmTcode(self.VideoBitRate480P,newwidth,480,self.NewWmWidth,"480p")
+                
+                #加水印且转码成360p,生成有水印360p段
+                newwidth = self.getNewFrameWidth("360")
+                self.addWmTcode(self.VideoBitRate360P,newwidth,360,self.NewWmWidth,"360p")
+                
+                #加水印且转码成240p,生成有水印240p段
+                newwidth = self.getNewFrameWidth("240")
+                self.addWmTcode(self.VideoBitRate240P,newwidth,240,self.NewWmWidth,"240p")
+                
+            if self.VideoFrameHeight > 1000:
+                #只加水印,不转码,生成有水印1080p段.
+                self.addWm(self.NewWmWidth,"1080p",self.VideoBitRate1080P)
+                
+                #加水印且转码成720p,生成有水印720p段
+                newwidth = self.getNewFrameWidth("720")
+                self.addWmTcode(self.VideoBitRate720P,newwidth,720,self.NewWmWidth,"720p")
+                
+                #加水印且转码成480p,生成有水印480p段
+                newwidth = self.getNewFrameWidth("480")
+                self.addWmTcode(self.VideoBitRate480P,newwidth,480,self.NewWmWidth,"480p")
+
+                #加水印且转码成360p,生成有水印360p段
+                newwidth = self.getNewFrameWidth("360")
+                self.addWmTcode(self.VideoBitRate360P,newwidth,360,self.NewWmWidth,"360p")
+                
+                #加水印且转码成240p,生成有水印240p段
+                newwidth = self.getNewFrameWidth("240")
+                self.addWmTcode(self.VideoBitRate240P,newwidth,240,self.NewWmWidth,"240p")
+                            
+        #只转码       
+        else:
+            if self.VideoFrameHeight <= 300:
+                #不加水印,不转吗,只添加关键帧
+                self.setKeyFrames("240p",self.VideoBitRate240P)
+            
+            if 300 < self.VideoFrameHeight <= 420:
+                #不加水印,不转吗,只添加关键帧
+                self.setKeyFrames("360p",self.VideoBitRate360P)
+        
+                #只转码,转码成240p,生成240p段
+                newwidth = self.getNewFrameWidth("240")
+                self.tranCode(self.VideoBitRate240P,newwidth,240,"240p")
+            
+            if 420 < self.VideoFrameHeight <= 600:
+                #不加水印,不转吗,只添加关键帧
+                self.setKeyFrames("480p",self.VideoBitRate480P)                
+                
+                #只转码,转码成360p,生成360p段
+                newwidth = self.getNewFrameWidth("360")
+                self.tranCode(self.VideoBitRate360P,newwidth,360,"360p")
+                
+                #只转码,转码成240p,生成240p段
+                newwidth = self.getNewFrameWidth("240")
+                self.tranCode(self.VideoBitRate240P,newwidth,240,"240p")
+                
+            if 600 < self.VideoFrameHeight <= 1000:
+                #不加水印,不转吗,只添加关键帧
+                self.setKeyFrames("720p",self.VideoBitRate720P)
+                
+                #只转码,转码成480p,生成480p段
+                newwidth = self.getNewFrameWidth("480")
+                self.tranCode(self.VideoBitRate480P,newwidth,480,"480p")
+                
+                #只转码,转码成360p,生成360p段
+                newwidth = self.getNewFrameWidth("360")
+                self.tranCode(self.VideoBitRate360P,newwidth,360,"360p")
+                
+                #只转码,转码成240p,生成240p段
+                newwidth = self.getNewFrameWidth("240")
+                self.tranCode(self.VideoBitRate240P,newwidth,240,"240p")
+                            
+            if self.VideoFrameHeight > 1000:
+                #不加水印,不转吗,只添加关键帧
+                self.setKeyFrames("1080p",self.VideoBitRate1080P)                
+                
+                #只转码,转码成720p,生成720p段
+                newwidth = self.getNewFrameWidth("720")
+                self.tranCode(self.VideoBitRate720P,newwidth,720,"720p")
+                
+                #只转码,转码成480p,生成480p段
+                newwidth = self.getNewFrameWidth("480")
+                self.tranCode(self.VideoBitRate480P,newwidth,480,"480p")
+                
+                #只转码,转码成360p,生成360p段
+                newwidth = self.getNewFrameWidth("360")
+                self.tranCode(self.VideoBitRate360P,newwidth,360,"360p")
+                
+                #只转码,转码成240p,生成240p段
+                newwidth = self.getNewFrameWidth("240")
+                self.tranCode(self.VideoBitRate240P,newwidth,240,"240p")
+                          
+        return self.FFmpegCmdList
+            
+    def uploadDataCmd(self):
+        self.uploadData()              
+        return self.HadoopCmdList
+
+#######################################               
+        
+if __name__ == "__main__":
+    
+    logger = baseclass.getlog("Mapper")
+    
+    
+    # --/
+    #     Initialization stage
+    # --/
+    
+    try:
+        
+        logger.info("Start mapper.....")
+        
+        #视频元数据
+        info_dict = pickle.load(open('video.info','r'))
+
+        #hadoop信息
+        hadoopinfo_dict = pickle.load(open('hadoop.info','r'))
+        
+        #初始化mysql对象
+        MysqlObj = baseclass.interWithMysql(logger,info_dict['name'])
+        
+        #视频分段块列表
+        seg_list = [line.strip() for line in sys.stdin]
+        
+        if len(seg_list) == 0:
+            logger.error("The mapper has not been assigned pending video segment,mapper quit!")
+        
+    except Exception,e:
+        logger.error("Mapper init exception: %s"%e)
+        MysqlObj.writeStatus("fail",info_dict['iswatermark'],info_dict['isoverwrite'],info="Mapper init exception: %s"%e)
+        
+    #重新初始化日志记录器
+    logger = baseclass.getlog(info_dict['name'],loglevel=info_dict['loglevel'])
+    MysqlObj = baseclass.interWithMysql(logger,info_dict['name'])
+    
+    # --/
+    #     Execute commands stage
+    # --/
+    
+    try:
+        RunCmdObj = baseclass.runCmd(logger,info_dict['name'],info_dict['iswatermark'],info_dict['isoverwrite'])
+        
+        VideoObj = mapCmdOutput(info_dict,hadoopinfo_dict,seg_list,logger)
+    
+        #初始化map hdfs对象
+        MapHdfsHost = VideoObj.HadoopNNAddr.split(":")[0]
+        MapWebHdfs = baseclass.WebHadoopOld(MapHdfsHost,"50071","cloudiyadatauser",logger)
+         
+        RunCmdObj.run(VideoObj.initMapperEnv())
+        
+        if len(VideoObj.downWaterMarkPic()) > 0:
+            WaterMark_Local_Dir = "/tmp/%s/%s" % (VideoObj.LocalTmpName,VideoObj.LogoName) 
+            WaterMark_hdfs_Dir = "/%s/%s" % (VideoObj.VideoFileNameAlias,VideoObj.LogoName)
+            
+	    MapWebHdfs.get_file(WaterMark_Local_Dir,WaterMark_hdfs_Dir)
+        
+        for seg in VideoObj.SegVideoNameList:
+            Avfiles_hdfs_dir = "/%s/avfiles/%s" % (VideoObj.VideoFileNameAlias,seg)
+            Avfiles_tmp_dir = "/tmp/%s/avfiles/%s" % (VideoObj.LocalTmpName,seg)
+            MapWebHdfs.get_file(Avfiles_tmp_dir,Avfiles_hdfs_dir)
+    
+        RunCmdObj.run(VideoObj.addWMarkORTCodeCmd())
+        Avfiles_tmp = "/tmp/%s/avfiles" % VideoObj.LocalTmpName
+        
+        videofile_list = []
+        
+        files = os.listdir("/tmp/%s/avfiles" % VideoObj.LocalTmpName)
+        
+        for file in files:
+            path = Avfiles_tmp + "/" + file
+            if os.path.isfile(path):
+                if "part" in file:
+                    videofile_list.append(file)
+
+        if len(videofile_list) !=0 :
+            for videofile in videofile_list:
+                videofile_localpath = Avfiles_tmp + "/" + videofile
+                videofile_hdfspath = "/%s/avfiles/%s" % (VideoObj.VideoFileNameAlias,videofile)
+                MapWebHdfs.put_file(videofile_localpath,videofile_hdfspath,overwrite="true")
+        
+    except Exception, e:
+        logger.error("Execute commands exception %s"%e) 
+        MysqlObj.writeStatus("fail",info_dict['iswatermark'],info_dict['isoverwrite'],info="Execute commands exception %s"%e)
+        sys.exit()   
+    
+    # --/
+    #     Finishing stage
+    # --/
+    
+    #清理临时文件夹
+    try: 
+        RunCmdObj.run(["rm -rf /tmp/%s"%(VideoObj.LocalTmpName)])
+    except Exception, e:
+        logger.error("WARNING: unable to clean TMP directory at /tmp/%s/" % (VideoObj.LocalTmpName)) 
+    
+    logger.info("Mapper handle video complete") 

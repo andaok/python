@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+<property>
+<name>fs.default.name</name>
+<value>hdfs://cwa00800.cloudiya.com:50081</value>
+</property>
+
+<property>
+<name>hadoop.tmp.dir</name>
+<value>/hadoopdata/tmp</value>
+</property>
+
+<property>
+<name>fs.checkpoint.dir</name>
+<value>/hadoopdata/snn</value>
+</property>
+
+<property>
+<name>io.file.buffer.size</name>
+<value>131072</value>
+</property>
+
+<property>
+<name>fs.checkpoint.period</name>
+<value>1800</value>
+</property>
+
+<property>
+<name>hadoop.logfile.size</name>
+<value>10000000</value>
+<description>The max size of each log file</description>
+</property>
+
+<property>
+<name>hadoop.logfile.count</name>
+<value>7</value>
+<description>The max number of log files</description>
+</property>
+
+
+</configuration>
