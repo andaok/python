@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>欢迎光临</title>
+</head>
+<body>
+{%for item in List%}
+{{ forloop.revcounter0  }}:{{item}}{%if not forloop.last%},{%endif%}
+{%endfor%}
+
+{% url 'add' A B as the_url  %}
+<a href="{{the_url}}">链接：{{the_url}}</a>
+
+<p>模板中的逻辑操作</p>
+{% if var >= 90 %}
+成绩优秀，自强学堂你没少去吧！学得不错
+{% elif var >= 80 %}
+成绩良好
+{% elif var >= 70 %}
+成绩一般
+{% elif var >= 60 %}
+需要努力
+{% else %}
+不及格啊，大哥！多去自强学堂学习啊！
+{% endif %}
+
+{% if var <= 100 and var >= 0 %}
+num在0到100之间
+{% else %}
+数值不在范围之内！
+{% endif %}
+
+<p>render to response</p>
+{{ request.user  }}
+{{ request.path  }}
+{{ request.GET.urlencode }}
+
+</body>
+</html>
