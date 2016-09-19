@@ -1,0 +1,2 @@
+
+hostname: '{{ ansible_hostname+"."+ansible_domain }}'

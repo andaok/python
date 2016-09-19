@@ -1,0 +1,23 @@
+- hosts: 172.29.19.85
+  tasks:
+    - name: "execute test1.sh" 
+      script: test1.sh 
+      register: test1_result
+      ignore_errors: True
+
+    - name: "execute test2.sh"
+      script: test2.sh
+      when: test1_result.rc == 7
+
+    - name: "execute test3.sh"
+      register: result
+      script: test3.sh
+      ignore_errors: True
+  
+    - name: "execute test4.sh"
+      script: test4.sh
+      when: result|failed
+
+    - name: "teat var"
+      #command: echo '{{ hostname  }}'
+      command: echo  '{{ ansible_hostname+"."+ansible_domain }}'
