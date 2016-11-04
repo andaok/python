@@ -100,11 +100,13 @@ class ExecFunByZabbixRequest(object):
         """
         Return activemq queue status value , 
         Queue has the following status needs to be monitored.
+        #######
         QueueSize : Number Of Pending Messages
         EnqueueCount : Messages Enqueued 
         DequeueCount : Messages Dequeued
         ProducerCount : Number of Producers
         ConsumerCount : Number Of Consumers
+        #######
         """
 
         QueueName = ParasList[0]
@@ -116,17 +118,36 @@ class ExecFunByZabbixRequest(object):
 
         print int(StatusValue)
 
+
     def ActivemqStatus(self,ParasList):
         """
         Return activemq global status value,
         Activemq has the following status needs to be monitored.
+        ######
         StorePercentUsage
-        
+        MemoryPercentUsage
+        TempPercentUsage
+        TotalDequeueCount
+        TotalEnqueueCount
+        TotalProducerCount
+        TotalConsumerCount
+        CurrentConnectionsCount
+        MinMessageSize
+        MaxMessageSize
+        AverageMessageSize
+        #######
         """
-      
-    
-if __name__ == "__main__":
+        
+        StatusName = ParasList[0]
+        ActivemqApiSuffix = "org.apache.activemq:type=Broker,brokerName=%s"%(ActivemqBrokerName)
+        RunDataDict = CallApiGetJsonData(ActivemqApiSuffix)
+        StatusValue = RunDataDict["value"][StatusName]
 
+        print int(StatusValue)
+
+          
+if __name__ == "__main__":
+    
     ExecFunByZabbixRequest(sys.argv[1:])
 
 
