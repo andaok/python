@@ -18,6 +18,15 @@
       script: test4.sh
       when: result|failed
 
-    - name: "teat var"
-      #command: echo '{{ hostname  }}'
+    - name: "teat var from facts"
       command: echo  '{{ ansible_hostname+"."+ansible_domain }}'
+
+    - name: "test var from group_vars"
+      command: echo '{{ hostname }}'
+
+    - name: "test shell block cmd"
+      shell: |
+        echo "hello world" >> /tmp/hi.txt
+        if [ $? -eq 0 ]; then
+           echo "end" >> /tmp/hi.txt
+        fi
