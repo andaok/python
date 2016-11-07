@@ -132,8 +132,6 @@ class ExecFunByZabbixRequest(object):
         TotalProducerCount
         TotalConsumerCount
         CurrentConnectionsCount
-        MinMessageSize
-        MaxMessageSize
         AverageMessageSize
         #######
         """
@@ -147,7 +145,7 @@ class ExecFunByZabbixRequest(object):
 
           
 if __name__ == "__main__":
-    
+
     ExecFunByZabbixRequest(sys.argv[1:])
 
 
