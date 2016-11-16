@@ -18,7 +18,7 @@ def zkset():
 
     file = "/tmp/redis_config.properties"
 
-    zk = KazooClient(hosts='172.29.22.17:2181')
+    zk = KazooClient(hosts='172.29.22.15:2181')
     zk.start()
 
     f=open(file,'rb')
@@ -40,7 +40,7 @@ def zkget():
 
     file = "/tmp/redis_config.properties.get"
 
-    zk = KazooClient(hosts='172.29.22.17:2181')
+    zk = KazooClient(hosts='172.29.22.15:2181')
     zk.start()
 
     f=open(file,'wb')
@@ -50,7 +50,7 @@ def zkget():
     zk.stop()
 
 
-zkset()
+#zkset()
 zkget()
 
 
