@@ -1,0 +1,19 @@
+mg-bkend:
+  "roledefs":
+    "tomcat":
+      - "bkend@172.29.22.18"
+      - "bkend@172.29.22.19"
+    "nginx":
+      - "nginxadmin@172.29.11.10"
+      - "nginxadmin@172.29.11.11"
+  "passwords":
+    "bkend@172.29.22.18:22": "123456"
+    "bkend@172.29.22.19:22": "234567"
+  "hostsconfs":
+    "172.29.22.18":
+      "tomcat_home": "/usr/tomcat"
+      "port": 9003
+      check_url: "http://www.baidu.com"
+  "appconfs":
+    local_package_path: "/home/jenkadmin/jenkins-slave/workspace/SIT/UFO/wh-ufo-api/api.war"
+    
