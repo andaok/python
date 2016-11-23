@@ -5,6 +5,7 @@
 # @Link    : http://example.org
 # @Version : $Id$
 
+import os
 from fabric.api import *
 
 env.roledefs = {
@@ -18,23 +19,26 @@ env.passwords = {
 }
 
 
-@parallel
-@roles("db","web")
-def test1():
-	print "test1"
+
+def compare_file(LocalFilePath,RemoteFilePath):
+    """
+    Two files to compare if there is a change to upload 
+    """
+    pass
 
 
-@parallel
-@roles("db","web")
-def test2():
-	print "test2"
+env.warn_only = True
 
-@runs_once
-def test():
-	execute(test1)
-	execute(test2)
 
-@roles("db","web")
-def go():
-	execute(test)
-	
+@task    
+@roles("web")    
+def upload2():
+    result = put("/tmp/script/xihahahah","/tmp/script1234")
+    print result.failed
+
+@task
+@roles("web")
+def upload1():
+    result = run("/tmp/xiji.sh")
+    print "failed is %s"%result.failed
+    print "code is %s"%result.return_code

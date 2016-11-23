@@ -13,7 +13,7 @@ mg-bkend:
     "172.29.22.18":
       "tomcat_home": "/usr/tomcat"
       "port": 9003
-      check_url: "http://www.baidu.com"
+      "check_url": "http://www.baidu.com"
   "appconfs":
-    local_package_path: "/home/jenkadmin/jenkins-slave/workspace/SIT/UFO/wh-ufo-api/api.war"
-    
+    "deploy_package_path": "/home/jenkadmin/jenkins-slave/workspace/SIT/UFO/wh-ufo-api/api.war"
+    "deploy_package_name": "qf-app-bkend"    
