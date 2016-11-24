@@ -1,3 +1,5 @@
+# -------------------------------------------------------
+
 tmp-mg-bkend:
   "roledefs":
     "tomcat":
@@ -44,7 +46,6 @@ mg-bkend:
       "tomcat_port": 9003
       "check_url": "http://www.baidu.com"
     "nginxadmin@172.29.22.27":
-      "nginx_home_dir": "/usr/local/nginx"
       "nginx_conf_path": "/usr/local/nginx/conf/vhost/jenkins_test.conf"
   "appconfs":
     "deploy_package_path": "/var/lib/jenkins/workspace/deploy_by_fabric/CODE/ROOT.war"

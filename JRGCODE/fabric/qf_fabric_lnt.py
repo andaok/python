@@ -189,12 +189,27 @@ def apphost_in_ng_up(AppHost):
 # --------------------------------------
 
 @task
+def go_work(mode="serial"):
+    if mode == "serial":
+        execute(work_mode_serial)
+    elif mode == "parallel":
+        execute(work_mode_parallel)
+    else:
+        abort("[work_mode][unsupported mode of work,quit]")
+
 @roles("tomcat")
-def work():
+def work_mode_serial():
     execute(apphost_in_ng_down,env.host_string)
     execute(deploy,env.host_string)
     execute(apphost_in_ng_up,env.host_string)
 
+@parallel
+@roles("tomcat")
+def work_mode_parallel():
+    print "wye is %s"%env.host_string
+    execute(deploy,env.host_string)
+
+
 
 # --------------------------------------
-# fab -f qf_fabric_lnt  prepare_data:AppName="mg-bkend",AppEnv="prod" work    
+# fab -f qf_fabric_lnt  prepare_data:AppName="mg-bkend",AppEnv="prod" go_work:mode="serial"    
