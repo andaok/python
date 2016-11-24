@@ -4,7 +4,7 @@
 # ---------------------------------------------------
 # @Date    : 2016-11-21 16:53:54
 # @Author  : wye
-# @Version : V1.0
+# @Version : V1.1
 # @Desrc   : with fabric automated operation and 
 #          + maintenance application cluster
 # ---------------------------------------------------
