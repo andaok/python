@@ -1,0 +1,54 @@
+tmp-mg-bkend:
+  "roledefs":
+    "tomcat":
+      - "bkend@172.29.22.18"
+      - "bkend@172.29.22.19"
+    "nginx":
+      - "nginxadmin@172.29.11.10"
+      - "nginxadmin@172.29.11.11"
+  "passwords":
+    "bkend@172.29.22.18:22": "123456"
+    "bkend@172.29.22.19:22": "234567"
+  "hostsconfs":
+    "172.29.22.18":
+      "tomcat_home": "/usr/tomcat"
+      "tomcat_port": 9003
+      "check_url": "http://www.baidu.com"
+    "172.29.11.10":
+      "nginx_home_dir": "/usr/local/nginx"
+      "nginx_conf_path": "/usr/local/nginx/conf/nginx.conf"
+  "appconfs":
+    "deploy_package_path": "/home/jenkadmin/jenkins-slave/workspace/SIT/UFO/wh-ufo-api/api.war"
+    "deploy_package_name": "qf-app-bkend"    
+
+# -------------------------------------------------------
+
+mg-bkend:
+  "roledefs":
+    "tomcat":
+      - "weiye@172.29.22.27"
+      - "weiye@172.29.22.31"
+    "nginx":
+      - "nginxadmin@172.29.22.27"
+  "passwords":
+    "weiye@172.29.22.27:22": "weiye"
+    "weiye@172.29.22.31:22": "weiye"
+    "nginxadmin@172.29.22.27:22": "123456"
+  "hostsconfs":
+    "weiye@172.29.22.27":
+      "tomcat_home_dir": "/usr/tomcat"
+      "tomcat_port": 9003
+      "check_url": "http://www.baidu.com"
+    "weiye@172.29.22.31":
+      "tomcat_home_dir": "/usr/tomcat"
+      "tomcat_port": 9003
+      "check_url": "http://www.baidu.com"
+    "nginxadmin@172.29.22.27":
+      "nginx_home_dir": "/usr/local/nginx"
+      "nginx_conf_path": "/usr/local/nginx/conf/vhost/jenkins_test.conf"
+  "appconfs":
+    "deploy_package_path": "/var/lib/jenkins/workspace/deploy_by_fabric/CODE/ROOT.war"
+    "deploy_package_name": "ROOT"    
+
+
+# ---------------------------------------------------------
