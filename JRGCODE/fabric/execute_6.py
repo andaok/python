@@ -21,15 +21,15 @@ env.passwords = {
 }
 
 
-@parallel
-@roles("app")
-def test(host):
-	print "this is def test , host is %s"%host
+env.warn_only = False
+
+@roles("web")
+def test1():
+    run("/tmp/hello.sh")
+    print "this is end"
 
 
-@roles("app")
-def action(action,name):
-	if action == "deploy" and name == "wye":
-		execute(test,env.host)
-
-    
+@roles("web")
+def test():
+    put("/tmp/xiha.sh","/tmp/xiha.sh")
+    print "this is end"

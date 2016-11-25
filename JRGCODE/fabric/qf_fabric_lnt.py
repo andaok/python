@@ -18,6 +18,9 @@ from fabric.contrib import *
 
 # Fabric env parameter
 env.warn_only = True
+env.timeout = 30
+env.connection_attempts = 2
+env.skip_bad_hosts = True
 
 
 # Default env parameter
@@ -70,12 +73,9 @@ def load_env_data(AppName,AppEnv):
         env.passwords = config_dict["passwords"]
         env.hostsconfs = config_dict["hostsconfs"]
         env.appconfs = config_dict["appconfs"]
-        print env.roledefs
-        print env.passwords
-        print env.hostsconfs
-        print env.appconfs 
     except yaml.YAMLError, e:
         abort("[load_env_data][Exception Quit,Error is]:\n %s"%e)
+
 
 @task
 def prepare_data(**kwargs):
@@ -197,19 +197,19 @@ def go_work(mode="serial"):
     else:
         abort("[work_mode][unsupported mode of work,quit]")
 
+
 @roles("tomcat")
 def work_mode_serial():
     execute(apphost_in_ng_down,env.host_string)
     execute(deploy,env.host_string)
     execute(apphost_in_ng_up,env.host_string)
+    
 
 @parallel
 @roles("tomcat")
 def work_mode_parallel():
-    print "wye is %s"%env.host_string
     execute(deploy,env.host_string)
-
-
+    
 
 # --------------------------------------
 # fab -f qf_fabric_lnt  prepare_data:AppName="mg-bkend",AppEnv="prod" go_work:mode="serial"    
