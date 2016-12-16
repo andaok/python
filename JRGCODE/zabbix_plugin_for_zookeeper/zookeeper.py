@@ -34,7 +34,14 @@ def GetRunStatusData():
     """
     cmd = "mntr"
     data = GetRawData(cmd)
-    DataDict = {i.split("\t")[0].strip():i.split("\t")[1].strip() for i in data.strip("\n").split("\n")}
+
+    DataDict = {}
+    for i in data.strip("\n").split("\n"):
+        DataDict[i.split("\t")[0].strip()] = i.split("\t")[1].strip()
+
+    #Not support in python 2.6.6  
+    #DataDict = {i.split("\t")[0].strip():i.split("\t")[1].strip() for i in data.strip("\n").split("\n")}
+
     return DataDict
 
 def GetSelfCheckData():
