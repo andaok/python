@@ -1,0 +1,16 @@
+install:
+  "roledefs":
+    "activemq":
+      - "weiye@172.29.22.27"
+      - "weiye@172.29.22.15"
+    "zookeeper":
+      - "weiye@172.29.22.27"
+      - "weiye@172.29.22.15"
+    "tcpstatus":
+      - "weiye@172.29.22.27"
+      - "weiye@172.29.22.15"
+  "passwords":
+    "weiye@172.29.22.15:22": "123456"
+    "weiye@172.29.22.27:22": "654321"
+
+    
