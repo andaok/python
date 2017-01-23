@@ -86,7 +86,7 @@ def prepare_data(**kwargs):
     AppEnv = kwargs["AppEnv"]
     execute(load_env_data,AppName,AppEnv)
     execute(upload_data_to_tomcat_host)
-    execute(upload_data_to_nginx_host)
+    if env.roledefs.has_key("nginx"):execute(upload_data_to_nginx_host)
 
 
 # ----------------------------------------
@@ -200,9 +200,9 @@ def go_work(mode="serial"):
 
 @roles("tomcat")
 def work_mode_serial():
-    execute(apphost_in_ng_down,env.host_string)
+    if env.roledefs.has_key("nginx"):execute(apphost_in_ng_down,env.host_string)
     execute(deploy,env.host_string)
-    execute(apphost_in_ng_up,env.host_string)
+    if env.roledefs.has_key("nginx"):execute(apphost_in_ng_up,env.host_string)
     
 
 @parallel
