@@ -28,7 +28,6 @@ CadvisorPort=8081
 DockerHost="172.29.150.112"
 DockerPort=2375
 
-
 # -------------------------
 # other
 # -------------------------
@@ -171,11 +170,20 @@ class ExecFunByZabbixRequest(object):
             RetDataDict = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
             LimitMemory = RetDataDict["memory_stats"]["limit"]
         elif self.DataSourceTag == "CadvisorApi":
-            ReqUrlSuffix = "/v1.22/containers/%s/stats?stream=false"%Cid
-            RetDataDict = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
-            LimitMemory = RetDataDict["memory_stats"]["limit"]
+            ReqUrlSuffix = "/api/v2.0/spec/%s?type=docker"%Cid
+            RetDataDict = CallApiGetData(self.CadvisorHost,self.CadvisorPort,ReqUrlSuffix)
+            for value in RetDataDict.values():LimitMemory = value["memory"]["limit"]
 
-        return LimitMemory
+            ReqUrlSuffix = "/api/v2.0/machine"
+            RetDataDict = CallApiGetData(self.CadvisorHost,self.CadvisorPort,ReqUrlSuffix)
+            MemoryCapacity = RetDataDict["memory_capacity"]
+
+            print LimitMemory,MemoryCapacity
+
+            if LimitMemory > MemoryCapacity:
+                return MemoryCapacity
+            else:
+                return LimitMemory
 
     def GetMemory(self,Cid):
         """
