@@ -34,6 +34,7 @@ DockerPort=2375
 
 DataSourceTag="CadvisorApi"  
 #DataSourceTag="DockerApi"
+AppPrivatePort=8080
 
 
 def CallApiGetData(Host,Port,ReqUrlSuffix):
@@ -73,6 +74,8 @@ class ExecFunByZabbixRequest(object):
         self.CadvisorHost = CadvisorHost
         self.CadvisorPort = CadvisorPort
 
+        self.AppPrivatePort = AppPrivatePort
+
         try:
             FunObj = getattr(self,ParasList[0])
         except AttributeError:
@@ -95,7 +98,12 @@ class ExecFunByZabbixRequest(object):
         RetDataList = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
 
         for cdict in RetDataList:
-            TmpList.append({"{#CONTAINERID}":cdict['Id']})
+            port = self.FindAppPubPort(cdict['Ports'])
+            id = cdict['Id']
+            name = cdict['Names'][0][1:]
+            #TmpList.append({"{#CONTAINERID}":id,"{#CONTAINERPORT}":port})
+            TmpList.append({"{#CONTAINERNAME}":name,"{#CONTAINERPORT}":port})
+            
 
         TmpDict["data"] = TmpList
 
@@ -178,7 +186,7 @@ class ExecFunByZabbixRequest(object):
             RetDataDict = CallApiGetData(self.CadvisorHost,self.CadvisorPort,ReqUrlSuffix)
             MemoryCapacity = RetDataDict["memory_capacity"]
 
-            print LimitMemory,MemoryCapacity
+            #print LimitMemory,MemoryCapacity
 
             if LimitMemory > MemoryCapacity:
                 return MemoryCapacity
@@ -220,13 +228,13 @@ class ExecFunByZabbixRequest(object):
             PreDataDict,CurDataDict = self.GetBaseDataFromDockerApi(Cid)
             IntervalNs = (self.TimeStrToTimestamp(CurDataDict["read"]) - self.TimeStrToTimestamp(PreDataDict["read"]))*1000000
             IntervalCpu = CurDataDict["cpu_stats"]["cpu_usage"]["total_usage"] - PreDataDict["cpu_stats"]["cpu_usage"]["total_usage"]
-            CpuTotalUsage = "%.3f"%(float(IntervalCpu)/float(IntervalNs))
+            CpuTotalUsage = "%.2f"%(float(IntervalCpu)/float(IntervalNs)*100)
             print CpuTotalUsage
         elif self.DataSourceTag == "CadvisorApi":
             PreDataDict,CurDataDict = self.GetBaseDataFromCadvisorApi(Cid)
             IntervalNs = (self.TimeStrToTimestamp(CurDataDict["timestamp"]) - self.TimeStrToTimestamp(PreDataDict["timestamp"]))*1000000
             IntervalCpu = CurDataDict["cpu"]["usage"]["total"] - PreDataDict["cpu"]["usage"]["total"]
-            CpuTotalUsage = "%.3f"%(float(IntervalCpu)/float(IntervalNs))
+            CpuTotalUsage = "%.2f"%(float(IntervalCpu)/float(IntervalNs)*100)
             print CpuTotalUsage
         else:
             print("No invaild api tag")
@@ -241,13 +249,13 @@ class ExecFunByZabbixRequest(object):
             IntervalInSec = "%.3f"%(float((self.TimeStrToTimestamp(CurDataDict["read"]) - self.TimeStrToTimestamp(PreDataDict["read"])))/1000)
             IntervalRxBytes = CurDataDict["networks"]["eth0"]["rx_bytes"] - PreDataDict["networks"]["eth0"]["rx_bytes"]
             NetIfInput = IntervalRxBytes/float(IntervalInSec)
-            print "%.3f"%NetIfInput
+            print int(NetIfInput)
         elif self.DataSourceTag == "CadvisorApi":
             PreDataDict,CurDataDict = self.GetBaseDataFromCadvisorApi(Cid)
             IntervalInSec = "%.3f"%(float((self.TimeStrToTimestamp(CurDataDict["timestamp"]) - self.TimeStrToTimestamp(PreDataDict["timestamp"])))/1000)
             IntervalRxBytes = CurDataDict["network"]["interfaces"][0]["rx_bytes"] - PreDataDict["network"]["interfaces"][0]["rx_bytes"]
             NetIfInput = IntervalRxBytes/float(IntervalInSec)
-            print "%.3f"%NetIfInput
+            print int(NetIfInput)
         else:
             print("No invaild api tag")
     
@@ -261,13 +269,13 @@ class ExecFunByZabbixRequest(object):
             IntervalInSec = "%.3f"%(float((self.TimeStrToTimestamp(CurDataDict["read"]) - self.TimeStrToTimestamp(PreDataDict["read"])))/1000)
             IntervalTxBytes = CurDataDict["networks"]["eth0"]["tx_bytes"] - PreDataDict["networks"]["eth0"]["tx_bytes"]
             NetIfOutput = IntervalTxBytes/float(IntervalInSec)
-            print "%.3f"%NetIfOutput
+            print int(NetIfOutput)
         elif self.DataSourceTag == "CadvisorApi":
             PreDataDict,CurDataDict = self.GetBaseDataFromCadvisorApi(Cid)
             IntervalInSec = "%.3f"%(float((self.TimeStrToTimestamp(CurDataDict["timestamp"]) - self.TimeStrToTimestamp(PreDataDict["timestamp"])))/1000)
             IntervalTxBytes = CurDataDict["network"]["interfaces"][0]["tx_bytes"] - PreDataDict["network"]["interfaces"][0]["tx_bytes"]
             NetIfOutput = IntervalTxBytes/float(IntervalInSec)
-            print "%.3f"%NetIfOutput
+            print int(NetIfOutput)
         else:
             print("No invaild api tag")
     
@@ -309,6 +317,20 @@ class ExecFunByZabbixRequest(object):
         local_timestamp = long(time.mktime(datetime_obj.timetuple()) * 1000.0 + datetime_obj.microsecond / 1000.0)
 
         return local_timestamp
+
+    def FindAppPubPort(self,BindPortList):
+        """
+        Find public port in localhost for docker container 
+        """
+        port = None
+        for BindPortDict in BindPortList:
+            if BindPortDict["PrivatePort"] == self.AppPrivatePort:
+                port = BindPortDict["PublicPort"]
+        if port != None:
+            return port
+        else:
+            return self.DockerPort
+
 
 if __name__ == "__main__":
     """
