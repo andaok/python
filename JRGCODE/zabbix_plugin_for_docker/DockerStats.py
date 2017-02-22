@@ -52,8 +52,10 @@ def CallApiGetData(Host,Port,ReqUrlSuffix):
             return resp_format_data
         else:
             print("call api fail!,return code %s"%response.status)
+            sys.exit(1)
     except Exception,e:
         print("call api error!,%s"%e)
+        sys.exit(1)
     finally:
         if httpClient:
             httpClient.close()
@@ -94,17 +96,15 @@ class ExecFunByZabbixRequest(object):
         TmpDict = {}
         TmpList = []
 
-        ReqUrlSuffix = '/v1.22/containers/json'
+        ReqUrlSuffix = '/v1.22/containers/json?all=true'
         RetDataList = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
 
         for cdict in RetDataList:
-            port = self.FindAppPubPort(cdict['Ports'])
             id = cdict['Id']
             name = cdict['Names'][0][1:]
-            #TmpList.append({"{#CONTAINERID}":id,"{#CONTAINERPORT}":port})
-            TmpList.append({"{#CONTAINERNAME}":name,"{#CONTAINERPORT}":port})
-            
+            TmpList.append({"{#CONTAINERNAME}":name})
 
+            
         TmpDict["data"] = TmpList
 
         print json.dumps(TmpDict) 
@@ -115,13 +115,13 @@ class ExecFunByZabbixRequest(object):
         Return docker daemon global status value
 
         Monitor metrics:
-        RunningContainerNum -> the number of containers running 
+        AllContainerNum -> the number of containers running 
         ExitedContainerNum -> the number of containers has been stopped
         """
 
         MonStr = ParasList[0]
-        if MonStr == "RunningContainerNum":
-            ReqUrlSuffix = '/v1.22/containers/json?filters={"status":["running"]}'
+        if MonStr == "AllContainerNum":
+            ReqUrlSuffix = '/v1.22/containers/json?all=true'
             RetDataList = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
             print len(RetDataList)
         elif MonStr == "ExitedContainerNum":
@@ -155,11 +155,13 @@ class ExecFunByZabbixRequest(object):
         elif MonStr == "MemoryPercentUsage":
             print self.GetMemoryPercentUsage(Cid)
         elif MonStr == "CpuTotalUsage":
-            self.GetCpuTotalUsage(Cid)
+            print self.GetCpuTotalUsage(Cid)
         elif MonStr == "NetIfInput":
-            self.GetNetIfInput(Cid)
+            print self.GetNetIfInput(Cid)
         elif MonStr == "NetIfOutput":
-            self.GetNetIfOutput(Cid)
+            print self.GetNetIfOutput(Cid)
+        elif MonStr == "status":
+            print self.GetContainerStatus(Cid)
         else:
             print("Unsupported monitoring metrics")
 
@@ -229,15 +231,14 @@ class ExecFunByZabbixRequest(object):
             IntervalNs = (self.TimeStrToTimestamp(CurDataDict["read"]) - self.TimeStrToTimestamp(PreDataDict["read"]))*1000000
             IntervalCpu = CurDataDict["cpu_stats"]["cpu_usage"]["total_usage"] - PreDataDict["cpu_stats"]["cpu_usage"]["total_usage"]
             CpuTotalUsage = "%.2f"%(float(IntervalCpu)/float(IntervalNs)*100)
-            print CpuTotalUsage
         elif self.DataSourceTag == "CadvisorApi":
             PreDataDict,CurDataDict = self.GetBaseDataFromCadvisorApi(Cid)
             IntervalNs = (self.TimeStrToTimestamp(CurDataDict["timestamp"]) - self.TimeStrToTimestamp(PreDataDict["timestamp"]))*1000000
             IntervalCpu = CurDataDict["cpu"]["usage"]["total"] - PreDataDict["cpu"]["usage"]["total"]
             CpuTotalUsage = "%.2f"%(float(IntervalCpu)/float(IntervalNs)*100)
-            print CpuTotalUsage
-        else:
-            print("No invaild api tag")
+        
+        return CpuTotalUsage
+
 
     def GetNetIfInput(self,Cid):
         """
@@ -249,16 +250,15 @@ class ExecFunByZabbixRequest(object):
             IntervalInSec = "%.3f"%(float((self.TimeStrToTimestamp(CurDataDict["read"]) - self.TimeStrToTimestamp(PreDataDict["read"])))/1000)
             IntervalRxBytes = CurDataDict["networks"]["eth0"]["rx_bytes"] - PreDataDict["networks"]["eth0"]["rx_bytes"]
             NetIfInput = IntervalRxBytes/float(IntervalInSec)
-            print int(NetIfInput)
         elif self.DataSourceTag == "CadvisorApi":
             PreDataDict,CurDataDict = self.GetBaseDataFromCadvisorApi(Cid)
             IntervalInSec = "%.3f"%(float((self.TimeStrToTimestamp(CurDataDict["timestamp"]) - self.TimeStrToTimestamp(PreDataDict["timestamp"])))/1000)
             IntervalRxBytes = CurDataDict["network"]["interfaces"][0]["rx_bytes"] - PreDataDict["network"]["interfaces"][0]["rx_bytes"]
             NetIfInput = IntervalRxBytes/float(IntervalInSec)
-            print int(NetIfInput)
-        else:
-            print("No invaild api tag")
+
+        return int(NetIfInput)
     
+
     def GetNetIfOutput(self,Cid):
         """
         Get the container network output rate from docker or cadvisor api 
@@ -269,16 +269,30 @@ class ExecFunByZabbixRequest(object):
             IntervalInSec = "%.3f"%(float((self.TimeStrToTimestamp(CurDataDict["read"]) - self.TimeStrToTimestamp(PreDataDict["read"])))/1000)
             IntervalTxBytes = CurDataDict["networks"]["eth0"]["tx_bytes"] - PreDataDict["networks"]["eth0"]["tx_bytes"]
             NetIfOutput = IntervalTxBytes/float(IntervalInSec)
-            print int(NetIfOutput)
         elif self.DataSourceTag == "CadvisorApi":
             PreDataDict,CurDataDict = self.GetBaseDataFromCadvisorApi(Cid)
             IntervalInSec = "%.3f"%(float((self.TimeStrToTimestamp(CurDataDict["timestamp"]) - self.TimeStrToTimestamp(PreDataDict["timestamp"])))/1000)
             IntervalTxBytes = CurDataDict["network"]["interfaces"][0]["tx_bytes"] - PreDataDict["network"]["interfaces"][0]["tx_bytes"]
             NetIfOutput = IntervalTxBytes/float(IntervalInSec)
-            print int(NetIfOutput)
-        else:
-            print("No invaild api tag")
+
+        return int(NetIfOutput)
     
+
+    def GetContainerStatus(self,Cid):
+        """
+        Check container status
+        Return value:
+        0 - container fail
+        1 - container ok
+        """
+        ReqUrlSuffix = "/v1.22/containers/%s/json"%Cid
+        RetDataDict = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
+        StatusDescrStr = RetDataDict["State"]["Status"]
+        if StatusDescrStr in ["running","created"]:
+            return 1
+        else:
+            return 0
+
 
     # -------------------
     # Part three
@@ -317,19 +331,6 @@ class ExecFunByZabbixRequest(object):
         local_timestamp = long(time.mktime(datetime_obj.timetuple()) * 1000.0 + datetime_obj.microsecond / 1000.0)
 
         return local_timestamp
-
-    def FindAppPubPort(self,BindPortList):
-        """
-        Find public port in localhost for docker container 
-        """
-        port = None
-        for BindPortDict in BindPortList:
-            if BindPortDict["PrivatePort"] == self.AppPrivatePort:
-                port = BindPortDict["PublicPort"]
-        if port != None:
-            return port
-        else:
-            return self.DockerPort
 
 
 if __name__ == "__main__":
