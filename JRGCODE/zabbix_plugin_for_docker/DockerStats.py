@@ -8,6 +8,7 @@
 # @Descr   : monitor for docker 
 # ---------------------------------------------
 
+import re
 import sys
 import time
 import json
@@ -51,7 +52,7 @@ def CallApiGetData(Host,Port,ReqUrlSuffix):
             resp_format_data = json.loads(resp_string)
             return resp_format_data
         else:
-            print("call api fail!,return code %s"%response.status)
+            print("Can't find the container or other's error,Please check docker host!,return code %s"%response.status)
             sys.exit(1)
     except Exception,e:
         print("call api error!,%s"%e)
@@ -140,6 +141,7 @@ class ExecFunByZabbixRequest(object):
         LimitMemory -> the max memory that the container can use
         Memory -> the container consumes memory
         MemoryPercentUsage -> the container memory percent usage
+        MemoryFailcnt -> the container ask memory failure number
         CpuTotalUsage -> the container total cpu percent usage
         NetIfInput -> the container network interface input rate
         NetIfOutput -> the container network interface output rate
@@ -154,6 +156,8 @@ class ExecFunByZabbixRequest(object):
             print self.GetMemory(Cid)
         elif MonStr == "MemoryPercentUsage":
             print self.GetMemoryPercentUsage(Cid)
+        elif MonStr == "MemoryFailcnt":
+            print self.GetMemoryFailcnt(Cid)
         elif MonStr == "CpuTotalUsage":
             print self.GetCpuTotalUsage(Cid)
         elif MonStr == "NetIfInput":
@@ -212,6 +216,7 @@ class ExecFunByZabbixRequest(object):
         
         return Memory
 
+
     def GetMemoryPercentUsage(self,Cid):
         """
         Get the container Memory Percent Usage 
@@ -220,6 +225,24 @@ class ExecFunByZabbixRequest(object):
         LimitMemory = self.GetLimitMemory(Cid)
         MemoryPercentUsage = "%.2f"%(float(Memory)/float(LimitMemory)*100)
         return MemoryPercentUsage
+
+
+    def GetMemoryFailcnt(self,Cid):
+        """
+        Get the container ask memory failure number
+        """
+        if self.DataSourceTag == "DockerApi":
+            ReqUrlSuffix = "/v1.22/containers/%s/stats?stream=false"%Cid
+            RetDataDict = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
+            MemoryFailcnt = RetDataDict["memory_stats"]["failcnt"]
+        elif self.DataSourceTag == "CadvisorApi":
+            ReqUrlSuffix = "/api/v2.0/stats/%s?type=docker&count=1"%Cid
+            RetDataDict = CallApiGetData(self.CadvisorHost,self.CadvisorPort,ReqUrlSuffix)
+            for value in RetDataDict.values():
+                MemoryFailcnt = value[0]["memory"]["failcnt"]
+        
+        return MemoryFailcnt
+
 
     def GetCpuTotalUsage(self,Cid):
         """
@@ -282,16 +305,32 @@ class ExecFunByZabbixRequest(object):
         """
         Check container status
         Return value:
-        0 - container fail
-        1 - container ok
+        0 - container ok
+        1 - container failure or exit
+        2 - container delete
         """
-        ReqUrlSuffix = "/v1.22/containers/%s/json"%Cid
-        RetDataDict = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
-        StatusDescrStr = RetDataDict["State"]["Status"]
-        if StatusDescrStr in ["running","created"]:
-            return 1
+
+        IsExist = False
+        
+        ReqUrlSuffix = '/v1.22/containers/json?all=true'
+        RetDataList = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
+
+        for cdict in RetDataList:
+            name = cdict['Names'][0][1:]
+            if name == Cid:
+                IsExist = True
+                break 
+
+        if IsExist == True:
+            ReqUrlSuffix = "/v1.22/containers/%s/json"%Cid
+            RetDataDict = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
+            StatusDescrStr = RetDataDict["State"]["Status"]
+            if StatusDescrStr in ["running","created"]:
+                return 0
+            else:
+                return 1
         else:
-            return 0
+            return 2
 
 
     # -------------------
@@ -308,6 +347,7 @@ class ExecFunByZabbixRequest(object):
         CurDataDict = CallApiGetData(self.DockerHost,self.DockerPort,ReqUrlSuffix)
         return PreDataDict,CurDataDict
     
+    
     def GetBaseDataFromCadvisorApi(self,Cid):
         """
         Get metric base data from cadvisor api
@@ -319,12 +359,17 @@ class ExecFunByZabbixRequest(object):
             CurDataDict = value[1]
         return PreDataDict,CurDataDict
 
+
     def TimeStrToTimestamp(self,TimeStr):
         """
         Time string transform to timestamp (ms)
         """
-        Ymd = TimeStr[0:10]
-        HMS = TimeStr[11:26]
+
+        m = re.match(r'(.*)T(.*)\.([0-9]{6})(.*)Z',TimeStr)
+
+        Ymd = m.groups()[0]
+        HMS = m.groups()[1] + "." + m.groups()[2]
+
         NewTimeStr = "%s %s"%(Ymd,HMS)
 
         datetime_obj=datetime.strptime(NewTimeStr,'%Y-%m-%d %H:%M:%S.%f')
