@@ -1,0 +1,17 @@
+
+[webserver]
+172.29.150.111
+
+[lbserver]
+172.29.150.112
+
+[appserver]
+172.29.150.25
+
+[all:children]
+webserver
+lbserver
+appserver 
+
+
+ 

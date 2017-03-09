@@ -1,0 +1,5 @@
+[appserver]
+172.29.150.25
+
+[all:children]
+appserver

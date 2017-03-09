@@ -1,0 +1,5 @@
+[lbserver]
+172.29.150.112
+
+[all:children]
+lbserver
