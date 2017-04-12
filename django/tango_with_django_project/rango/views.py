@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from django.http import HttpResponse
 
 from rango.models import Category,Page
@@ -13,6 +13,8 @@ from django.http import HttpResponseRedirect , HttpResponse
 from django.core.urlresolvers import reverse
 
 from django.contrib.auth.decorators import login_required
+
+from rango.webhose_search import run_query
 
 @login_required
 def restricted(request):
@@ -39,7 +41,7 @@ def show_category(request,category_name_slug):
 
     try:
         category = Category.objects.get(slug=category_name_slug)
-        pages = Page.objects.filter(category=category)
+        pages = Page.objects.filter(category=category).order_by('-views')
         context_dict['pages'] = pages
         context_dict['category'] = category
     except Category.DoesNotExist:
@@ -166,3 +168,30 @@ def visitor_cookie_handler(request):
 
     request.session['visits'] = visits
 
+
+def search(request):
+    result_list = []
+    query = None
+    if request.method == 'POST':
+        query = request.POST['query'].strip()
+        if query:
+            result_list = run_query(query)
+
+    return render(request,'rango/search.html',{'result_list':result_list,'query_string':query})
+
+
+def track_url(request):
+    page_id = None
+    url = '/rango/'
+    if request.method == "GET":
+        if 'page_id' in request.GET:
+            page_id = request.GET['page_id']
+            try:
+                page = Page.objects.get(id=page_id)
+                page.views = page.views + 1
+                page.save()
+                url = page.url
+            except:
+                pass
+
+    return redirect(url)
