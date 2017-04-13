@@ -9,6 +9,14 @@
         <div>
             {% if category %}
                 <h1>{{ category.name }}</h1>
+                <div>
+                    <strong id="like_count">{{ category.likes }}</strong> people like this category
+                    {% if user.is_authenticated %}
+                        <button id="likes" data-catid="{{ category.id }}" class="btn btn-primary btn-sm" type="button">
+                        Like
+                        </button>
+                    {% endif %}
+                </div>
                 {% if pages %}
                     <ul>
                     {% for page in pages %}
@@ -25,6 +33,11 @@
                 {% else %}
                     <strong>No pages current in category.</strong>
                 {% endif %}
+                
+                <hr>
+                <div id="pages">
+                </div>
+
             {% else %}
                 The specified category does not exist!
             {% endif %}
@@ -33,6 +46,29 @@
             {% if user.is_authenticated %}
                 {% if category %}
                     <a href="{% url 'rango:add_page' category.slug %}">add page</a><br />
+                    <form class="form-inline" id="user_form" method="post" action="{% url 'rango:show_category' category.slug %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <input class="form-control" type="text" size="50" name="query" value="{{ query }}" id="query" />
+                        </div>
+                        <button class="btn btn-primary" type="submit" name="submit" value="Search">Search</button>
+                    </form>
+                    <div>
+                        {% if result_list %}
+                            <h3>Results</h3>
+                            <div class="list-group">
+                                {% for result in result_list %}
+                                    <div class="list-group-item">
+                                    <h4 class="list-group-item-heading"><a href="{{ result.link }}">{{ result.title }}</a></h4>
+                                    <p class="list-group-item-text">{{ result.summary }}</p>
+                                    <button data-catid="{{ category.id }}" data-title="{{ result.title }}" data-url="{{ result.link }}" class="rango-add btn btn-info btn-sm" type="button">
+                                    Add
+                                    </button>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
                 {% endif %}
             {% endif %}
             <strong><a href="{% url 'rango:index' %}">return back to index page</a></strong>
