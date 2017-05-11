@@ -19,6 +19,17 @@
     <!-- Custom styles for this template -->
     <link href="{% static 'css/dashboard.css'%}" rel="stylesheet">
 
+    <!-- for kendoui -->
+
+    <script src="{% static 'kendoui/js/jquery.min.js' %}"></script> 
+    <link rel="stylesheet" href="{% static 'kendoui/styles/kendo.common.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'kendoui/styles/kendo.default.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'kendoui/styles/kendo.default.mobile.min.css' %}" />
+    <script src="{% static 'kendoui/js/kendo.core.min.js' %}"></script>
+    <script src="{% static 'kendoui/js/kendo.ui.core.min.js' %}"></script>
+    <script src="{% static 'kendoui/js/kendo.combobox.min.js' %}"></script>
+    
+
     {% block extrahead_block %}
     {% endblock %}
 
@@ -62,7 +73,7 @@
                                   <a class="nav-link active" href="#">作业状态</a>
                                 </li>
                                 <li class="nav-item">
-                                  <a class="nav-link" href="#"> - 作业概览</a>
+                                  <a class="nav-link" href="{% url 'jobapp:index' %}"> - 作业概览</a>
                                 </li>
                                 <li class="nav-item">
                                   <a class="nav-link" href="#"> - 正运行的作业</a>
@@ -75,25 +86,13 @@
                                 </li>   
                              </ul>
                              <hr/>
-                             <ul class="nav nav-pills flex-column">
-				<li class="nav-item">
-				  <a class="nav-link active" href="#">系统初始化</a>
-				</li>
-				<li class="nav-item">
-				  <a class="nav-link" href="#"> - 基于IP</a>
-				</li>
-				<li class="nav-item">
-				  <a class="nav-link" href="#"> - 基于主机名</a>
-				</li>
-				<li class="nav-item">
-				  <a class="nav-link" href="#"> - 基于业务</a>
-				</li>
-				<li class="nav-item">
-				  <a class="nav-link" href="#"> - 基于组</a>
-				</li>
-                                <li class="nav-item">
-                                  <a class="nav-link" href="#"> - 基于模块</a>
-                                </li>  			
+        <ul class="nav nav-pills flex-column">
+				   <li class="nav-item">
+				      <a class="nav-link active" href="#">配置管理</a>
+				   </li>
+           <li class="nav-item">
+              <a class="nav-link" href="#select_target" data-toggle="modal"> - 执行作业</a>
+           </li>
 			  </ul>
 			  <hr>
 			{% endblock %}
@@ -108,11 +107,138 @@
       </div>
     </div>
 
+    <!-- popup box 1 start -->
+    <div class="modal fade" id="select_target" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title" id="myModalLabel">选取目标</h6>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          </div>
+          <div class="modal-body" id="ShowInfoDiv">
+          
+          <!-- select execute target for salt -->
+          <div id="example">
+
+            <div class="demo-section k-content">
+                <ul id="fieldlist">
+                    <li>
+                        <label for="applications">业务</label>
+                        <input id="applications" style="width: 100%;" />
+                    </li>
+                    <li>
+                        <label for="sets">组</label>
+                        <input id="sets" disabled="disabled" style="width: 100%;" />
+                    </li>
+                    <li>
+                        <label for="modules">模块</label>
+                        <input id="modules" disabled="disabled" style="width: 100%;" />
+                    </li>
+                </ul>
+            </div>
+
+            <style>
+               #fieldlist {
+                   margin: 0;
+                   padding: 0;
+               }
+       
+               #fieldlist li {
+                   list-style: none;
+                   padding-bottom: 1.5em;
+                   text-align: left;
+               }
+       
+               #fieldlist label {
+                   display: block;
+                   padding-bottom: .3em;
+                   font-weight: bold;
+                   text-transform: uppercase;
+                   font-size: 12px;
+               }
+            </style>
+
+            <script>
+                $(document).ready(function() {
+                    var applications = $("#applications").kendoComboBox({
+                        filter: "contains",
+                        placeholder: "Select App...",
+                        dataTextField: "ApplicationName",
+                        dataValueField: "ApplicationID",
+                        dataSource: {
+                            type: "json",
+                            serverFiltering: true,
+                            transport: {
+                                read: "/jobapp/get_app_info"
+                            }
+                        }
+                    }).data("kendoComboBox");
+
+                    var sets = $("#sets").kendoComboBox({
+                        autoBind: false,
+                        cascadeFrom: "applications",
+                        filter: "contains",
+                        placeholder: "Select Group...",
+                        dataTextField: "SetName",
+                        dataValueField: "SetID",
+                        dataSource: {
+                            type: "json",
+                            serverFiltering: true,
+                            transport: {
+                                read: "/jobapp/get_set_info"
+                            }
+                        }
+                    }).data("kendoComboBox");
+
+                    var modules = $("#modules").kendoComboBox({
+                        autoBind: false,
+                        cascadeFrom: "sets",
+                        filter: "contains",
+                        placeholder: "Select Module...",
+                        dataTextField: "ModuleName",
+                        dataValueField: "ModuleID",
+                        dataSource: {
+                            type: "json",
+                            serverFiltering: true,
+                            transport: {
+                                read: "/jobapp/get_module_info"
+                            }
+                        }
+                    }).data("kendoComboBox");
+
+
+                    $("#get").click(function() {
+
+                        var app = applications.value() + "_" +  applications.text()
+                        var set = sets.value() + "_" + sets.text()
+                        var module = modules.value() + "_" + modules.text()
+
+                        location.href = "/jobapp/target_hosts_info?app="+app+"&"+"set="+set+"&"+"module="+module
+
+
+
+                    });
+                });
+            </script>
+</div>
+          <!-- end-->
+
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-primary" id="get">确认</button>
+          </div>
+        </div>
+      </div>
+   </div>
+    <!-- popup box 1 end   --> 
+
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="{% static 'js/tether.min.js' %}"></script>
-    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <!-- <script src="{% static 'js/jquery.min.js' %}"></script> -->
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <script src="{% static 'js/jobapp.js' %}"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->

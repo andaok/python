@@ -1,9 +1,19 @@
+# -*- encoding:utf-8 -*-
+#--------------------------------
+# @Date    : 2017-05-10 15:00
+# @Author  : wye
+# @Version : v1.0
+# @Desrc   : job control app views
+# -------------------------------- 
+
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse,JsonResponse
+
 
 import json
 import MySQLdb
 from salt_api_sdk import *
+from bk_cmdb_api import *
 
 
 
@@ -15,7 +25,6 @@ MysqlUser = "root"
 MysqlPasswd = ""
 MysqlDB = "salt"
 # -----------------------------------------
-
 
 
 def execute_sql(sql):
@@ -99,6 +108,43 @@ def index(request):
     return render(request,'jobapp/index.html',resp_info)
 
 
+
+def get_appinfo_from_bking(request):
+    appinfo = get_app_info()
+    return JsonResponse(appinfo,safe=False)
+
+
+
+def get_setinfo_from_bking(request):
+    app_field_name = request.GET['filter[filters][0][field]']
+    app_id = request.GET['filter[filters][0][value]']
+    setinfo = get_set_info(app_id)
+    return JsonResponse(setinfo,safe=False)
+
+
+
+def get_moduleinfo_from_bking(request):
+    set_name = request.GET['filter[filters][0][field]']
+    set_id = request.GET['filter[filters][0][value]']
+    moduleinfo = get_module_info(set_id)
+    return JsonResponse(moduleinfo,safe=False)
+
+
+
+def target_hosts_info(request):
+    hostsinfo = {}
+    appid = request.GET['app'].split("_")[0]
+    appname = request.GET['app'].split("_")[1]
+    setid = request.GET['set'].split("_")[0]
+    setname = request.GET['set'].split("_")[1]
+    moduleid = request.GET['module'].split("_")[0]
+    modulename = request.GET['module'].split("_")[1]
+    
+    hostsinfo["appname"] = appname
+    hostsinfo["setname"] = setname
+    hostsinfo["modulename"] = modulename
+
+    return render(request,'jobapp/target_hosts_info.html',hostsinfo)
 
 # ----------------------
 # FOR DEBUG
