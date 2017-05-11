@@ -1,0 +1,29 @@
+{% extends 'xcmdb_main/base.html' %}
+{% load staticfiles %}
+{% load bootstrap_toolkit %}
+
+{% block title_block %}
+    addhost
+{% endblock %}
+
+{% block extrahead_block %}
+
+{% endblock %}
+
+{% block body_block %}
+	<form role="form" id="add_host_form" method="post" action="{% url 'xcmdb_main:add_host' %}">
+	{% csrf_token %}
+	{% for hidden in form.hidden_fields %}
+        {{ hidden }}
+    {% endfor %}
+    {% for field in form.visible_fields %}
+        {{ field.errors }}
+        {{ field.help_text }}<br/>
+        {{ field }}<br/>
+    {% endfor %}
+
+	<br/>
+
+	<button class="btn btn-primary" type="submit" name="submit">ADD HOST</button>
+	</form>
+{% endblock %}

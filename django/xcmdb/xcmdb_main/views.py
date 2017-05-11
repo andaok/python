@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from xcmdb_main.forms import AddHostForm
 
 
 def index(request):
@@ -20,7 +21,12 @@ def global_sum(request):
 
 
 def add_host(request):
-	pass
+	form = AddHostForm()
+
+	if request.method == 'POST':
+		print request.POST
+
+	return render(request,'xcmdb_main/add_host.html',{'form':form})
 
 
 def manage_host(request):

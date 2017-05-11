@@ -11,9 +11,7 @@
     <link rel="icon" href="{% static 'images/favicon.ico' %}">
 
     <title>
-	Xcmdb-
-	{% block title_block %}
-	{% endblock %}
+	cmdb-job-{% block title_block %}{% endblock %}
     </title>
 
     <!-- Bootstrap core CSS -->
@@ -38,20 +36,19 @@
       <div class="collapse navbar-collapse" id="navbarsExampleDefault">
 	  
         <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-                <a class="nav-link" href="#"><img width="30" height="30" src="http://lorempixel.com/64/64/people/"/><a>
-            </li>
+            <p><font color="#FF0000">作业控制</font></p>
         </ul>
 		
         <div class="form-inline mt-2 mt-md-0">
 			{% if user.is_authenticated %}
-				<a href="{% url 'xcmdb_main:auth_logout'%}">Logout</a>
+				<a href="#"><font color="#FF0000">Logout</font></a>
 			{% else %}
-				<a href="{% url 'xcmdb_main:auth_login'%}">Login</a>
+				<a href="#"><font color="#FF0000">Login</font></a>
 			{% endif %}
-	</div>
+	    </div>
 		
       </div>
+
     </nav>
 
     <div class="container-fluid">
@@ -60,36 +57,52 @@
 	<!-- PART TWO -->
         <nav class="col-sm-3 col-md-2 hidden-xs-down bg-faded sidebar">
 			{% block sidebar_block %}
-			  <ul class="nav nav-pills flex-column">
+                              <ul class="nav nav-pills flex-column">
+                                <li class="nav-item">
+                                  <a class="nav-link active" href="#">作业状态</a>
+                                </li>
+                                <li class="nav-item">
+                                  <a class="nav-link" href="#"> - 作业概览</a>
+                                </li>
+                                <li class="nav-item">
+                                  <a class="nav-link" href="#"> - 正运行的作业</a>
+                                </li>
+                                <li class="nav-item">
+                                  <a class="nav-link" href="#"> - 已完成的作业</a>
+                                </li>
+                                <li class="nav-item">
+                                  <a class="nav-link" href="#"> - 失败的作业</a>
+                                </li>   
+                             </ul>
+                             <hr/>
+                             <ul class="nav nav-pills flex-column">
 				<li class="nav-item">
-				  <a class="nav-link active" href="{% url 'xcmdb_main:global_sum' %}">全局概览</a>
+				  <a class="nav-link active" href="#">系统初始化</a>
 				</li>
 				<li class="nav-item">
-				  <a class="nav-link" href="{% url 'xcmdb_main:add_host' %}">添加主机</a>
+				  <a class="nav-link" href="#"> - 基于IP</a>
 				</li>
 				<li class="nav-item">
-				  <a class="nav-link" href="{% url 'xcmdb_main:manage_host' %}">管理主机</a>
+				  <a class="nav-link" href="#"> - 基于主机名</a>
 				</li>
 				<li class="nav-item">
-				  <a class="nav-link" href="{% url 'xcmdb_main:query_service' %}">查询服务</a>
+				  <a class="nav-link" href="#"> - 基于业务</a>
 				</li>
 				<li class="nav-item">
-				  <a class="nav-link" href="{% url 'xcmdb_main:exec_job' %}">作业执行</a>
-				</li>			
+				  <a class="nav-link" href="#"> - 基于组</a>
+				</li>
+                                <li class="nav-item">
+                                  <a class="nav-link" href="#"> - 基于模块</a>
+                                </li>  			
 			  </ul>
 			  <hr>
-			  <ul class="nav nav-pills flex-column">
-				<li class="nav-item">
-				  <a class="nav-link" href="{% url 'xcmdb_main:help_service' %}">帮助</a>
-				</li>
-			  </ul>
 			{% endblock %}
         </nav>
-
+    
 		<!-- PART THREE -->
         <main class="col-sm-9 offset-sm-3 col-md-10 offset-md-2 pt-3">
-            {% block body_block %}
-	        {% endblock %}
+            {% block main_block %}
+	    {% endblock %}           
         </main>
 		
       </div>
@@ -101,7 +114,7 @@
     <script src="{% static 'js/tether.min.js' %}"></script>
     <script src="{% static 'js/jquery.min.js' %}"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
-    <script src="{% static 'js/rango-ajax.js' %}"></script>
+    <script src="{% static 'js/jobapp.js' %}"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="{% static 'js/ie10-viewport-bug-workaround.js' %}"></script>
 	
