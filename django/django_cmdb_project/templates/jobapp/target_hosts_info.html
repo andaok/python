@@ -11,28 +11,30 @@
     </div>
 
      <div class="table-responsive">
-        <table class="table table-striped table-condensed">
+        <table class="table table-striped table-condensed table-border">
             <thead>
                 <tr>
                     <td>ID</td>
                     <td>HOSTNAME</td>
-                    <td>SYSTEM</td>
-                    <td>IP</td>
-                    <td>Salt-minion</td>
-                    <td>Connectivity</td>
+                    <td>SYSTEM(BKING)</td>
+                    <td>SYSTEM(SALT)</td>
+                    <td>IP(BKING)</td>
+                    <td>IP(SALT)</td>
+                    <td>HOST STATUS</td>
                     <td>DETAIL</td>
                 </tr>
             </thead>
             <tbody id="id_running_jobs_table">
             
-            {% for key,value in running_jobs_info.items %}
+            {% for host in hosts %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ key }}</td>
-                    <td>{{ value.StartTime }}</td>
-                    <td>{{ value.Target }}</td>
-                    <td>{{ value.Function }}</td>
-                    <td>{{ value.Arguments }}</td>
+                    <td>{{ host.HostName }}</td>
+                    <td>{{ host.OSName }}</td>
+                    <td>{{ host.osname_salt }}</td>
+                    <td>{{ host.InnerIP }}</td>
+                    <td>{{ host.ip_salt }}</td>
+                    <td>{{ host.status }}</td>
                     <td><button class="btn btn-outline-success my-2 my-sm-0" type="submit">Detail</button></td>
                 </tr>
             {% endfor %}

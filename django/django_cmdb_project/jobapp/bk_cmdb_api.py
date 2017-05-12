@@ -54,15 +54,21 @@ def get_module_info(setid):
         return []
 
 
-def get_host_info(module_id):
-    module_map_setid = None
-    module_map_appid = None
+def get_hosts_info_by_module(app_id,set_id,module_id):
+    resp_hosts_list = requests.post('http://%s:%s/api/Host/getmodulehostlist'%(bking_cmdb_server,bking_cmdb_port),data={
+        "ApplicationID":app_id,
+        "ModuleID":module_id
+        })
+    if resp_hosts_list.json()['code'] == 0:
+        return resp_hosts_list.json()['data']
+    else:
+        return []
 
-   
 
 if __name__ == "__main__":
 
     #print get_app_info()
     #print get_set_info(6,6)
     #print get_module_info()
-    print get_module_info(10)
+    #print get_module_info(10)
+    print len(get_hosts_info_by_module(2,3,33))

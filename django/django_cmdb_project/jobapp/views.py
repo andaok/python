@@ -132,19 +132,34 @@ def get_moduleinfo_from_bking(request):
 
 
 def target_hosts_info(request):
-    hostsinfo = {}
+    target_hosts_info = {}
     appid = request.GET['app'].split("_")[0]
     appname = request.GET['app'].split("_")[1]
+
     setid = request.GET['set'].split("_")[0]
     setname = request.GET['set'].split("_")[1]
+
     moduleid = request.GET['module'].split("_")[0]
     modulename = request.GET['module'].split("_")[1]
     
-    hostsinfo["appname"] = appname
-    hostsinfo["setname"] = setname
-    hostsinfo["modulename"] = modulename
+    target_hosts_info["appname"] = appname
+    target_hosts_info["setname"] = setname
+    target_hosts_info["modulename"] = modulename
 
-    return render(request,'jobapp/target_hosts_info.html',hostsinfo)
+    hosts_list = get_hosts_info_by_module(appid,setid,moduleid)
+
+    for host in hosts_list:
+        host['status'] = get_host_status(host['HostName'])
+        if host['status']:
+            host_meta_info = get_host_meta_info(host['HostName'])
+            host['osname_salt'] = host_meta_info['os'] + host_meta_info['osrelease']
+            host['ip_salt'] = ','.join(host_meta_info['ipv4'])
+        else:
+            pass
+
+    target_hosts_info['hosts'] = hosts_list
+    
+    return render(request,'jobapp/target_hosts_info.html',target_hosts_info)
 
 # ----------------------
 # FOR DEBUG
