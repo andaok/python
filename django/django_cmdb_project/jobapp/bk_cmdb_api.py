@@ -54,6 +54,7 @@ def get_module_info(setid):
         return []
 
 
+
 def get_hosts_info_by_module(app_id,set_id,module_id):
     resp_hosts_list = requests.post('http://%s:%s/api/Host/getmodulehostlist'%(bking_cmdb_server,bking_cmdb_port),data={
         "ApplicationID":app_id,

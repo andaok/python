@@ -216,7 +216,6 @@
                         location.href = "/jobapp/target_hosts_info?app="+app+"&"+"set="+set+"&"+"module="+module
 
 
-
                     });
                 });
             </script>
@@ -243,6 +242,8 @@
     <script src="{% static 'js/jobapp.js' %}"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="{% static 'js/ie10-viewport-bug-workaround.js' %}"></script>
-	
+	  <script>
+      $(function () { $("[data-toggle='tooltip']").tooltip(); });
+    </script>
     </body>
 </html>

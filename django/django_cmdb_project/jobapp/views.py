@@ -152,8 +152,8 @@ def target_hosts_info(request):
         host['status'] = get_host_status(host['HostName'])
         if host['status']:
             host_meta_info = get_host_meta_info(host['HostName'])
-            host['osname_salt'] = host_meta_info['os'] + host_meta_info['osrelease']
-            host['ip_salt'] = ','.join(host_meta_info['ipv4'])
+            host['osname_salt'] = host_meta_info['os'] + " " + host_meta_info['osrelease']
+            host['ip_salt'] = '|'.join(host_meta_info['ipv4'])
         else:
             pass
 

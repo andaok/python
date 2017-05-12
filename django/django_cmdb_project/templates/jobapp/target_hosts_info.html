@@ -13,29 +13,35 @@
      <div class="table-responsive">
         <table class="table table-striped table-condensed table-border">
             <thead>
-                <tr>
+                <tr align="center">
                     <td>ID</td>
                     <td>HOSTNAME</td>
                     <td>SYSTEM(BKING)</td>
                     <td>SYSTEM(SALT)</td>
                     <td>IP(BKING)</td>
                     <td>IP(SALT)</td>
-                    <td>HOST STATUS</td>
+                    <td>STATUS(SALT PING)</td>
                     <td>DETAIL</td>
                 </tr>
             </thead>
             <tbody id="id_running_jobs_table">
             
             {% for host in hosts %}
-                <tr>
+                <tr align="center">
                     <td>{{ forloop.counter }}</td>
                     <td>{{ host.HostName }}</td>
                     <td>{{ host.OSName }}</td>
                     <td>{{ host.osname_salt }}</td>
                     <td>{{ host.InnerIP }}</td>
                     <td>{{ host.ip_salt }}</td>
-                    <td>{{ host.status }}</td>
-                    <td><button class="btn btn-outline-success my-2 my-sm-0" type="submit">Detail</button></td>
+                    <td>
+                    	{% if host.status == 1 %}
+                    		<font color="green" data-toggle="tooltip" title="salt-minion is up"><strong>OK</strong></font>
+                    	{% else %}
+                    	    <font color="red" data-toggle="tooltip" title="salt-minion is down"><strong>KO</strong></font>
+                    	{% endif %}
+                    </td>
+                    <td><a class="btn btn-outline-success my-2 my-sm-0" href="#" role="button">Detail</a></td>
                 </tr>
             {% endfor %}
            
