@@ -61,7 +61,12 @@ def get_recent_failure_tasks_info(num=10):
 
 
 def get_recent_failure_tasks_nums():
-    sql = "select count(*) from salt_returns where success=0"
+
+    sql = 'select count(*) from salt_returns  \n \
+           where fun <> "runner.jobs.active"  \n \
+           and fun <> "saltutil.running"  \n \
+           and success=0'
+
     _ , Records_tuple = execute_sql(sql)
     recent_failure_tasks_nums = Records_tuple[0][0]
     return recent_failure_tasks_nums
@@ -161,15 +166,26 @@ def target_hosts_info(request):
     
     return render(request,'jobapp/target_hosts_info.html',target_hosts_info)
 
+
+def get_host_detail_info(request):
+    hostname = request.GET['hostname']
+    host_meta_info = get_host_meta_info(hostname)
+    host_meta_info['osname_salt'] = host_meta_info['os'] + " " + host_meta_info['osrelease']
+    host_meta_info['ip_salt'] = '|'.join(host_meta_info['ipv4'])
+
+    return render(request,'jobapp/host_detail.html',{"host_detail_info":host_meta_info})
+
 # ----------------------
 # FOR DEBUG
 # ----------------------
 
 if __name__ == "__main__":
-    print get_recent_failure_tasks_info(10)
+    #print get_recent_failure_tasks_info(10)
     # print get_recent_succss_tasks_info(10)
     # print get_recent_all_jobs_nums()
     # print get_recent_failure_tasks_nums()
     # print get_recent_success_tasks_nums()
-   
+    pass
+
+
 

@@ -9,4 +9,5 @@ urlpatterns = [
     url(r'^get_set_info/$',views.get_setinfo_from_bking,name="get_set_info"),
     url(r'^get_module_info/$',views.get_moduleinfo_from_bking,name="get_module_info"),
     url(r'^target_hosts_info/$',views.target_hosts_info,name="target_hosts_info"),
+    url(r'^get_host_detail_info/$',views.get_host_detail_info,name="get_host_detail_info"),
 ]
