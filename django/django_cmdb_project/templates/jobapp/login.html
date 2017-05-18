@@ -1,0 +1,36 @@
+{% extends 'jobapp/base.html' %}
+{% load staticfiles %}
+
+{% block title_block %}
+    LOGIN
+{% endblock %}
+
+{% block main_block %}
+
+<div class="row">
+<div class="col-md-5"></div>
+<div class="col-md-2">
+      
+      <form class="form-signin" id="login_form" method="post" action="{% url 'jobapp:login' %}">
+        {% csrf_token %}
+        <h2 class="form-signin-heading"></h2>
+        <h5 class="form-signin-heading">{{ error_info }}</h5>
+        <label for="inputUsername" class="sr-only">Username</label>
+        <input type="text" id="inputUsername" class="form-control" placeholder="Username" name="username" required autofocus>
+        <label for="inputPassword" class="sr-only">Password</label>
+        <input type="password" id="inputPassword" class="form-control" placeholder="Password" name="password" required>
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" value="remember-me"> Remember me
+          </label>
+        </div>
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+      </form>
+      
+
+</div>
+<div class="col-md-5"></div>
+</div> <!-- /container -->
+
+
+{% endblock %}

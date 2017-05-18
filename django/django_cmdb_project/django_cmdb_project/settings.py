@@ -137,5 +137,5 @@ MEDIA_URL = '/media/'
 
 #------------------------------
 
-
+LOGIN_URL = '/jobapp/login/'
 

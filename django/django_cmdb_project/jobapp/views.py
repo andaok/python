@@ -7,7 +7,10 @@
 # -------------------------------- 
 
 from django.shortcuts import render
-from django.http import HttpResponse,JsonResponse
+from django.http import HttpResponse,JsonResponse,HttpResponseRedirect
+from django.contrib.auth import authenticate,login,logout
+from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import login_required
 
 
 import json
@@ -100,7 +103,7 @@ def get_recent_all_jobs_nums():
     return recent_all_jobs_nums
     
 
-
+@login_required
 def index(request):    
     resp_info = {}
     resp_info['recent_all_jobs_nums'] = get_recent_all_jobs_nums()
@@ -113,13 +116,13 @@ def index(request):
     return render(request,'jobapp/index.html',resp_info)
 
 
-
+@login_required
 def get_appinfo_from_bking(request):
     appinfo = get_app_info()
     return JsonResponse(appinfo,safe=False)
 
 
-
+@login_required
 def get_setinfo_from_bking(request):
     app_field_name = request.GET['filter[filters][0][field]']
     app_id = request.GET['filter[filters][0][value]']
@@ -127,7 +130,7 @@ def get_setinfo_from_bking(request):
     return JsonResponse(setinfo,safe=False)
 
 
-
+@login_required
 def get_moduleinfo_from_bking(request):
     set_name = request.GET['filter[filters][0][field]']
     set_id = request.GET['filter[filters][0][value]']
@@ -135,7 +138,7 @@ def get_moduleinfo_from_bking(request):
     return JsonResponse(moduleinfo,safe=False)
 
 
-
+@login_required
 def target_hosts_info(request):
     target_hosts_info = {}
     appid = request.GET['app'].split("_")[0]
@@ -167,6 +170,9 @@ def target_hosts_info(request):
     return render(request,'jobapp/target_hosts_info.html',target_hosts_info)
 
 
+
+
+@login_required
 def get_host_detail_info(request):
     hostname = request.GET['hostname']
     host_meta_info = get_host_meta_info(hostname)
@@ -174,6 +180,37 @@ def get_host_detail_info(request):
     host_meta_info['ip_salt'] = '|'.join(host_meta_info['ipv4'])
 
     return render(request,'jobapp/host_detail.html',{"host_detail_info":host_meta_info})
+
+
+
+
+
+def auth_login(request):
+    context = {}
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(username=username,password=password)
+        if user:
+            if user.is_active:
+                login(request,user)
+                return HttpResponseRedirect(reverse('jobapp:index'))
+            else:
+                context['error_info'] = "%s ACCOUNT IS DISABLED!"%username
+        else:
+            context['error_info'] = "INVALID ACCOUNT!"
+    
+
+    return render(request,'jobapp/login.html',context)
+
+
+
+@login_required
+def auth_logout(request):
+    logout(request)
+    return HttpResponseRedirect(reverse('jobapp:login'))
+
+
 
 # ----------------------
 # FOR DEBUG

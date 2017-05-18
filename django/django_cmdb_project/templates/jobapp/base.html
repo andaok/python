@@ -52,9 +52,9 @@
 		
         <div class="form-inline mt-2 mt-md-0">
 			{% if user.is_authenticated %}
-				<a href="#"><font color="#FF0000">Logout</font></a>
+				<a href="{% url 'jobapp:logout'%}"><font color="#FF0000">Logout</font></a>
 			{% else %}
-				<a href="#"><font color="#FF0000">Login</font></a>
+				<a href="{% url 'jobapp:login'%}"><font color="#FF0000">Login</font></a>
 			{% endif %}
 	    </div>
 		
@@ -101,7 +101,7 @@
 		<!-- PART THREE -->
         <main class="col-sm-9 offset-sm-3 col-md-10 offset-md-2 pt-3">
             {% block main_block %}
-	    {% endblock %}           
+	          {% endblock %}           
         </main>
 		
       </div>
