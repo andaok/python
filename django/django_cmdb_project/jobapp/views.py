@@ -212,6 +212,22 @@ def auth_logout(request):
 
 
 
+
+@login_required
+def get_failure_task_detail_info(request):
+    context = {}
+    jid = request.GET['jid']
+    hostname = request.GET['hostname']
+    sql = 'select full_ret from salt_returns where jid="%s" and id="%s"'%(jid,hostname)
+    failure_task_num,failure_task_record_tuple =  execute_sql(sql)
+    if failure_task_num != 0:
+        failure_task_record = json.loads(failure_task_record_tuple[0][0])
+        context['failure_task_record'] = failure_task_record  
+
+    return render(request,'jobapp/failure_task_detail.html',context)
+
+
+
 # ----------------------
 # FOR DEBUG
 # ----------------------
@@ -222,6 +238,7 @@ if __name__ == "__main__":
     # print get_recent_all_jobs_nums()
     # print get_recent_failure_tasks_nums()
     # print get_recent_success_tasks_nums()
+    #get_failure_task_detail_info_test("20170518140245899698","W612-JENKDOCK-3")
     pass
 
 

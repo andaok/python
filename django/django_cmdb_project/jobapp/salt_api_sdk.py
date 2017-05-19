@@ -44,6 +44,13 @@ def get_host_status(hostname):
         return 0
 
 
+def init_sys_env(target_hosts_list):
+    local = salt.client.LocalClient()
+    resp = local.cmd(target_hosts_list,'state.sls',['test.init_env'],expr_form='list',timeout=2)
+    print resp
+
+
+
 if __name__ == "__main__":
 
     # # obtain keep_jobs
@@ -83,5 +90,6 @@ if __name__ == "__main__":
     # print len(resp)
 
     #print get_host_meta_info("W612-JENKDOCK-3")
-    print get_host_status("BGP-NETAM-01")
+    #print get_host_status("BGP-NETAM-01")
+    init_sys_env(["W612-JENKDOCK-3","W612-JENKDOCK-4"])
     pass

@@ -76,6 +76,9 @@
                                   <a class="nav-link" href="{% url 'jobapp:index' %}"> - 作业概览</a>
                                 </li>
                                 <li class="nav-item">
+                                  <a class="nav-link" href="#"> - 已提交的作业</a>
+                                </li>                                
+                                <li class="nav-item">
                                   <a class="nav-link" href="#"> - 正运行的作业</a>
                                 </li>
                                 <li class="nav-item">
@@ -91,10 +94,27 @@
 				      <a class="nav-link active" href="#">配置管理</a>
 				   </li>
            <li class="nav-item">
-              <a class="nav-link" href="#select_target" data-toggle="modal"> - 执行作业</a>
+              <a class="nav-link" href="#select_target_cmdb" data-toggle="modal"> - CMDB目标选取</a>
+           </li>
+           <li class="nav-item">
+              <a class="nav-link" href="#select_target_salt" data-toggle="modal"> - SALT目标选取</a>
            </li>
 			  </ul>
 			  <hr>
+
+        <ul class="nav nav-pills flex-column">
+           <li class="nav-item">
+              <a class="nav-link active" href="#">分组管理</a>
+           </li>
+           <li class="nav-item">
+              <a class="nav-link" href="#" data-toggle="modal"> - SALT分组设置</a>
+           </li>
+           <li class="nav-item">
+              <a class="nav-link" href="#" data-toggle="modal"> - 自定义分组设置</a>
+           </li>
+        </ul>
+        <hr>
+
 			{% endblock %}
         </nav>
     
@@ -108,7 +128,7 @@
     </div>
 
     <!-- popup box 1 start -->
-    <div class="modal fade" id="select_target" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal fade" id="select_target_cmdb" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
