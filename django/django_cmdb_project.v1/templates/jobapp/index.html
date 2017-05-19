@@ -1,0 +1,130 @@
+{% extends 'jobapp/base.html' %}
+{% load staticfiles %}
+
+{% block title_block %}
+    JobStatus
+{% endblock %}
+
+{% block main_block%}
+   
+    
+    <section class="row text-center placeholders">
+            <div class="col-6 col-sm-3 placeholder">
+              <span id="id_running_jobs_nums" class="glyphicon glyphicon-euro" style="color: rgb(0, 132, 228); font-size: 38px;">{{running_jobs_nums}}</span>
+              <h6>Running Jobs</h6>
+            </div>
+            <div class="col-6 col-sm-3 placeholder">
+              <span id="id_recent_all_jobs_nums" class="glyphicon glyphicon-euro" style="color: rgb(0, 132, 228); font-size: 38px;">{{recent_all_jobs_nums}}</span>
+              <h6>All Jobs</h6>
+            </div>
+            <div class="col-6 col-sm-3 placeholder">
+               <span id="id_recent_success_tasks_nums" class="glyphicon glyphicon-euro" style="color: rgb(0, 132, 228); font-size: 38px;">{{recent_success_tasks_nums}}</span>
+              <h6>Success Tasks</h6>
+            </div>
+            <div class="col-6 col-sm-3 placeholder">
+              <span id="id_recent_failure_tasks_nums" class="glyphicon glyphicon-euro" style="color: rgb(0, 132, 228); font-size: 38px;">{{recent_failure_tasks_nums}}</span>
+              <h6>Failure Tasks</h6>
+            </div>
+     </section>
+
+    <h6 style="color: rgb(0, 132, 228)">Running Jobs</h6>
+    <div class="table-responsive">
+        <table class="table table-striped table-condensed">
+            <thead>
+                <tr>
+                    <td>ID</td>
+                    <td>JID</td>
+                    <td>TIME</td>
+                    <td>TARGET</td>
+                    <td>FUN</td>
+                    <td>Arguments</td>
+                    <td>DETAIL</td>
+                </tr>
+            </thead>
+            <tbody id="id_running_jobs_table">
+            
+            {% for key,value in running_jobs_info.items %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ key }}</td>
+                    <td>{{ value.StartTime }}</td>
+                    <td>{{ value.Target }}</td>
+                    <td>{{ value.Function }}</td>
+                    <td>{{ value.Arguments }}</td>
+                    <td><button class="btn btn-outline-success my-2 my-sm-0" type="submit">Detail</button></td>
+                </tr>
+            {% endfor %}
+           
+            </tbody>
+        </table>
+    </div>
+
+    
+    <h6 style="color: rgb(0, 132, 228)">Failure Tasks</h6>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <td>ID</td>
+                    <td>JID</td>
+                    <td>TIME</td>
+                    <td>TARGET</td>
+                    <td>FUN</td>
+                    <td>Arguments</td>
+                    <td>DETAIL</td>
+                </tr>
+            </thead>
+            <tbody id="id_recent_failure_jobs_table">
+
+            {% for item in recent_failure_tasks_info %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ item.1 }}</td>
+                    <td>{{ item.3 }}</td>
+                    <td>{{ item.2 }}</td>
+                    <td>{{ item.0 }}</td>
+                    <td>See Detail</td>
+                    <td>
+                        <a class="btn btn-outline-success my-2 my-sm-0"  role="button" id="{{ item.1 }}_{{ item.2 }}" name="failure_task_detail_btn" href="#failure_task_detail_info" data-toggle="modal">Detail</a>
+                    </td>
+                </tr>
+            {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+
+
+<!-- popup box start -->
+    <div class="modal fade" id="failure_task_detail_info" tabindex="-1" role="dialog" aria-labelledby="myModalLabel1" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title" id="myModalLabel1"></h6>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          </div>
+          <div class="modal-body" id="ShowFailTaskDetailInfoDiv">
+          </div>
+          <div class="modal-footer">
+          </div>
+        </div>
+      </div>
+   </div>
+<!-- popup box end   --> 
+
+
+<script type="text/javascript">
+    $(document).ready(function(){
+    $('[name="failure_task_detail_btn"]').click(function() {
+        var ArgsArray = $(this).attr("id").split("_")
+        jid = ArgsArray[0]
+        hostname = ArgsArray[1]
+        $.get('/jobapp/get_failure_task_detail_info/',{hostname:hostname,jid:jid},function(data){
+          $('#ShowFailTaskDetailInfoDiv').html(data)
+        })
+      })
+    })
+</script>
+
+{% endblock %}
+
