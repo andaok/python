@@ -13,4 +13,5 @@ urlpatterns = [
     url(r'^login/$',views.auth_login,name="login"),
     url(r'^logout/$',views.auth_logout,name="logout"),
     url(r'^get_failure_task_detail_info/$',views.get_failure_task_detail_info,name="get_failure_task_detail_info"),
+    url(r'^state_sls_job_execute/$',views.state_sls_job_execute,name="state_sls_job_execute"),
 ]

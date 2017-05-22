@@ -228,6 +228,24 @@ def get_failure_task_detail_info(request):
 
 
 
+
+@login_required
+def state_sls_job_execute(request):
+    target_hosts = request.POST['show_target_hosts']
+    action = request.POST['state_sls_select']
+    is_test = request.POST.get('state_sls_is_test')
+    
+    target_hosts_list = target_hosts.split(",")
+
+    if is_test == None:
+        # Real execute job
+        jid =  state_sls_job_execute_real(target_hosts_list,action)
+    else:
+        # test execute job
+        pass
+
+    return render(request,'jobapp/exec_result_show.html',{"target_hosts":target_hosts,"jid":jid})
+
 # ----------------------
 # FOR DEBUG
 # ----------------------

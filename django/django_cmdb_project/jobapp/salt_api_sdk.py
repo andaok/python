@@ -46,8 +46,15 @@ def get_host_status(hostname):
 
 def init_sys_env(target_hosts_list):
     local = salt.client.LocalClient()
-    resp = local.cmd(target_hosts_list,'state.sls',['test.init_env'],expr_form='list',timeout=2)
+    resp = local.cmd_async(target_hosts_list,'state.sls',['test.init_env'],expr_form='list',timeout=2)
     print resp
+
+
+def state_sls_job_execute_real(target_hosts_list,action):
+    local = salt.client.LocalClient()
+    if action == "initsys":
+        jid = local.cmd_async(target_hosts_list,'state.sls',['test.init_env'],expr_form='list',timeout=2)
+    return jid
 
 
 
