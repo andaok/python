@@ -115,6 +115,11 @@ def get_job_host_task_status(host,jid):
     return status
 
 
+def job_host_task_info(host,jid):
+    sql = "select full_ret from salt_returns where jid='%s' and id='%s'"%(jid,host)
+    _, Records_tuple = execute_sql(sql)
+    return json.loads(Records_tuple[0][0])
+
 
 @login_required
 def index(request):    
@@ -290,6 +295,14 @@ def get_job_hosts_task_status(request):
 
     return JsonResponse(hosts_status,safe=False)
     
+
+@login_required
+def get_job_host_task_info(request):
+    host = request.GET['host']
+    jid = request.GET['jid']
+    info = job_host_task_info(host,jid)
+    return JsonResponse([{"info":info}],safe=False)
+
 
 # ----------------------
 # FOR DEBUG
