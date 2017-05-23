@@ -23,17 +23,17 @@
 			</td>
 		</tr>
 		<tr>
-			<td>
-			[ 目标主机数: {{ target_hosts_num }} ]
-			<a href="#">详情</a> 
+			<td id="target_hosts_num" val="{{ target_hosts_num }}">
+			[ 
+			目标主机数: <span class="badge badge-pill badge-primary"> <font data-toggle="tooltip" title="" data-original-title="
+所有执行job任务的主机.">{{target_hosts_num}}</font></span> , 
+			已返回主机数: <span class="badge badge-pill badge-primary"><font data-toggle="tooltip" title="" data-original-title="
+已返回数据的主机，包括成功和失败的." id="return_hosts_num">0</font></span> , 
+			未返回主机数: <span class="badge badge-pill badge-primary"><font data-toggle="tooltip" title="" data-original-title="
+未返回数据的主机，minion未启动或和master断开."  id="no_return_hosts_num">{{target_hosts_num}}</font></span>
+			]
 			</td>
-		</tr>
-		<tr>
-			<td>
-			[ 已返回主机数: 15 ]
-			<a href="#">详情</a> 
-			</td>
-		</tr>
+		</tr>	
 		</tbody>
 	</table>
 </div>
@@ -55,13 +55,15 @@
 				<td>{{ host }}</td>
 				<td id="check" val="{{ host }}"><img src="{% static 'images/loading1.gif'%}"></td>
 				<td>
-					<a class="btn btn-outline-success my-2 my-sm-0 disabled"  role="button" id="{{jid}}:{{host}}" name="job_host_task_detail_btn" href="#job_host_task_detail_info" data-toggle="modal">Detail</a>
+					<a class="btn btn-outline-success my-2 my-sm-0 disabled"  role="button" id="{{host}}" val="{{jid}}|{{host}}" name="job_host_task_detail_btn" href="#job_host_task_detail_info" data-toggle="modal">Detail</a>
 				</td>
 			</tr>
 		{% endfor %}
 		</tbody>
 	</table>
 </div>
+
+
 
 <script type="text/javascript">
 
@@ -89,13 +91,28 @@
                 		   //$('#show').html(DataArray[i]['host'] + "," + DataArray[i]['status'])
                 		   host = DataArray[i]['host']
                 		   status = DataArray[i]['status']
+
                 		   if (status == 0) {
                 		   	  $("td[val="+host+"]").html("<font color='green'><strong>SUCCESS</strong></font>")
                 		   } else {
                 		   	  $("td[val="+host+"]").html("<font color='red'><strong>FAILURE</strong></font>")
                 		   }
                 		   $("td[val="+host+"]").removeAttr("id")
+                		   $("#"+host).removeClass("disabled")
                 	    }
+                        
+                        target_hosts_num = $("td#target_hosts_num").attr("val")
+                        target_hosts_num = new Number(target_hosts_num)
+                        no_return_hosts_num = 0
+                        $("td#check").each(function(){
+                        	no_return_hosts_num = no_return_hosts_num + 1
+                        })
+                        return_hosts_num = target_hosts_num - no_return_hosts_num
+
+                        $('#return_hosts_num').text(return_hosts_num)
+                        $('#no_return_hosts_num').text(no_return_hosts_num)
+
+
                 	}
 
                 })
