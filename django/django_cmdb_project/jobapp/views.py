@@ -101,7 +101,20 @@ def get_recent_all_jobs_nums():
     _ , Records_tuple = execute_sql(sql)
     recent_all_jobs_nums = Records_tuple[0][0]
     return recent_all_jobs_nums
-    
+
+
+
+def get_job_host_task_status(host,jid):
+    sql = "select full_ret from salt_returns where jid='%s' and id='%s'"%(jid,host)
+    Records_num, Records_tuple = execute_sql(sql)
+    if Records_num == 0 or Records_num == None:
+        status = None
+    else:
+        status = json.loads(Records_tuple[0][0])['retcode']
+
+    return status
+
+
 
 @login_required
 def index(request):    
@@ -128,6 +141,7 @@ def get_setinfo_from_bking(request):
     app_id = request.GET['filter[filters][0][value]']
     setinfo = get_set_info(app_id)
     return JsonResponse(setinfo,safe=False)
+
 
 
 @login_required
@@ -236,15 +250,46 @@ def state_sls_job_execute(request):
     is_test = request.POST.get('state_sls_is_test')
     
     target_hosts_list = target_hosts.split(",")
+    target_hosts_num = len(target_hosts_list)
 
     if is_test == None:
         # Real execute job
         jid =  state_sls_job_execute_real(target_hosts_list,action)
     else:
         # test execute job
-        pass
+        jid =  state_sls_job_execute_real(target_hosts_list,action)
 
-    return render(request,'jobapp/exec_result_show.html',{"target_hosts":target_hosts,"jid":jid})
+    return render(request,'jobapp/exec_result_show.html',{"target_hosts_list":target_hosts_list,"target_hosts_num":target_hosts_num,"jid":jid,"is_test":is_test})
+
+
+
+
+@login_required
+def get_job_hosts_task_status(request):
+    hosts = request.GET['hosts']
+    jid = request.GET['jid']
+    
+    host_list = hosts.split(",")
+    hosts_status = []
+
+    print "host_list is %s"%host_list
+
+    for host in host_list:
+        
+        status = get_job_host_task_status(host,jid)
+
+        print "info is %s %s %s"%(host , jid ,status)
+
+        if status != None:
+            host_status = {'host':host,'status':status}
+            hosts_status.append(host_status)
+    
+    print "hosts_status is %s"%hosts_status
+
+    #hosts_status = [{'host':'w26','status':1},{'host':'456','status':0}]
+
+    return JsonResponse(hosts_status,safe=False)
+    
 
 # ----------------------
 # FOR DEBUG
@@ -257,6 +302,9 @@ if __name__ == "__main__":
     # print get_recent_failure_tasks_nums()
     # print get_recent_success_tasks_nums()
     #get_failure_task_detail_info_test("20170518140245899698","W612-JENKDOCK-3")
+    #print get_job_host_task_status("W612-JENKDOCK-4","20170523140452702260")
+
+
     pass
 
 
