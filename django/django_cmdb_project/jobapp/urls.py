@@ -16,4 +16,5 @@ urlpatterns = [
     url(r'^state_sls_job_execute/$',views.state_sls_job_execute,name="state_sls_job_execute"),
     url(r'^get_job_hosts_task_status/$',views.get_job_hosts_task_status,name="get_job_hosts_task_status"),
     url(r'^get_job_host_task_info/$',views.get_job_host_task_info,name="get_job_host_task_info"),
+    url(r'^hostname_base_bking_module/$',views.hostname_base_bking_module,name="hostname_base_bking_module"),
 ]

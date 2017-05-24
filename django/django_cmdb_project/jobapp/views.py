@@ -189,6 +189,22 @@ def target_hosts_info(request):
     return render(request,'jobapp/target_hosts_info.html',target_hosts_info)
 
 
+def hostname_base_bking_module(request):
+
+    appid = request.GET['appid']
+    setid = request.GET['setid']
+    moduleid = request.GET['moduleid']
+    hosts_list = get_hosts_info_by_module(appid,setid,moduleid)
+
+    hostname_list = []
+
+    for host in hosts_list:
+        hostname_list.append(host['HostName'])
+
+    #hostname_list = [{"hostname":"wer","hostid":"234"}]
+
+    return JsonResponse(hostname_list,safe=False)
+
 
 
 @login_required
@@ -262,7 +278,7 @@ def state_sls_job_execute(request):
         jid =  state_sls_job_execute_real(target_hosts_list,action)
     else:
         # test execute job
-        jid =  state_sls_job_execute_real(target_hosts_list,action)
+        jid =  state_sls_job_execute_test(target_hosts_list,action)
 
     return render(request,'jobapp/exec_result_show.html',{"target_hosts_list":target_hosts_list,"target_hosts_num":target_hosts_num,"jid":jid,"is_test":is_test})
 

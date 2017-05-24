@@ -56,6 +56,11 @@ def state_sls_job_execute_real(target_hosts_list,action):
         jid = local.cmd_async(target_hosts_list,'state.sls',['test.init_env'],expr_form='list',timeout=2)
     return jid
 
+def state_sls_job_execute_test(target_hosts_list,action):
+    local = salt.client.LocalClient()
+    if action == "initsys":
+        jid = local.cmd_async(target_hosts_list,'state.sls',['test.init_env','test=true'],expr_form='list',timeout=2)
+    return jid
 
 
 if __name__ == "__main__":
