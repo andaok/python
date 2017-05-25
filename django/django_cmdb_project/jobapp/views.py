@@ -12,6 +12,7 @@ from django.contrib.auth import authenticate,login,logout
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 
+from jobapp.models import DynamicGroup
 
 import json
 import MySQLdb
@@ -318,6 +319,60 @@ def get_job_host_task_info(request):
     jid = request.GET['jid']
     info = job_host_task_info(host,jid)
     return JsonResponse([{"info":info}],safe=False)
+
+
+
+@login_required
+def dynamic_group_manage(request):
+    group_name = request.GET.get("group_name")
+    group_members = request.GET.get("group_members")
+
+    print "info is %s - %s"%(group_name,group_members)
+
+    group_members_list = group_members.split(",")
+    group_members_list = list(set(group_members_list))
+    group_members = ",".join(group_members_list)
+    
+    retinfo = {}
+
+    try:
+        group_obj = DynamicGroup.objects.get(GroupName=group_name)
+        group_obj.GroupMembers = group_members
+        group_obj.save()
+        retinfo["operate"] = "update group %s"%group_name
+    except DynamicGroup.DoesNotExist:
+        group_obj = DynamicGroup(GroupName=group_name,GroupMembers=group_members)
+        group_obj.save()
+        retinfo["operate"] = "create group %s"%group_name
+   
+    return JsonResponse(retinfo,safe=False)
+
+
+
+
+@login_required
+def dynamic_group_records(request):
+    groups_obj = DynamicGroup.objects.all()
+    groups_list = []
+    for group_obj in groups_obj:
+        group = {"id":group_obj.id,"GroupName":group_obj.GroupName,"GroupMembers":group_obj.GroupMembers}
+        groups_list.append(group)
+    return JsonResponse(groups_list,safe=False)
+
+
+
+@login_required
+def dynamic_group_record_by_id(request):
+    id = request.GET.get("id")
+    group_obj = DynamicGroup.objects.get(id=id)
+    GroupMembers_Str = group_obj.GroupMembers
+    GroupMembers_List = GroupMembers_Str.split(",")
+    hostname_list = []
+    for hostname in GroupMembers_List:
+        hostname_list.append({"hostname":hostname,"hostid":"9999"})
+
+    group = {"id":group_obj.id,"GroupName":group_obj.GroupName,"GroupMembers":hostname_list}
+    return JsonResponse(group,safe=False)
 
 
 # ----------------------
