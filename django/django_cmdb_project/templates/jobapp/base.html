@@ -130,6 +130,8 @@
       </div>
     </div>
 
+    
+
     <!-- popup box 1 start -->
     <div class="modal fade" id="select_target_cmdb" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
       <div class="modal-dialog">
@@ -260,7 +262,7 @@
 
   <! -- popup box 2 sart -->
   <div class="modal fade" id="dynamic_group_manage" tabindex="-1" role="dialog" aria-labelledby="myModalLabel1" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-      <div class="modal-dialog modal-lg">
+      <div class="modal-dialog modal-lg" style="height:900px; overflow:scroll;">
         <div class="modal-content">
           <div class="modal-header">
             <h6 class="modal-title" id="myModalLabel">动态分组管理</h6>
@@ -552,6 +554,14 @@
                     });
 
 
+                    $('body').on('click',"a[name='dynamic_group_del_btn']",function(){
+                          var  id = $(this).attr("val")
+                          $.get("{% url 'jobapp:dynamic_group_del_record_by_id'%}",{id:id},function(data){
+                               DynamicGroupTableRender()
+                          })
+                    })
+
+
                   
                 });
 
@@ -596,7 +606,57 @@
         </div>
       </div>
    </div>
-  <! -- popup box 2 end  -->
+  <!-- popup box 2 end  -->
+
+
+  <!-- popup box 3 start -->
+
+    <div class="modal fade" id="select_target_dynamic" tabindex="-1" role="dialog" aria-labelledby="myModalLabel11" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title" id="myModalLabel11">动态组选择</h6>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="demo-section k-content">
+                <input id="dynamic_group" style="width: 100%" />
+            </div>
+            <script>
+                $(document).ready(function() {
+                   $("#dynamic_group").kendoDropDownList({
+                        dataTextField: "GroupName",
+                        dataValueField: "id",
+                        dataSource: {
+                            transport: {
+                                read: {
+                                    dataType: "json",
+                                    url: "/jobapp/dynamicgroup/show",
+                                }
+                            }
+                        }
+                    });
+
+                    var dynamic_group_data = $("#dynamic_group").data("kendoDropDownList")
+
+                    $("#dynamic_group_select_btn").click(function(){
+                        var GroupName = dynamic_group_data.text()
+                        var GroupID = dynamic_group_data.value()
+                        location.href = "/jobapp/dynamic_group_hosts_info?GroupName="+GroupName+"&"+"GroupID="+GroupID
+
+                    })
+                });
+            </script>
+          </div>
+          <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="dynamic_group_select_btn">确认</button>
+          </div>
+        </div>
+      </div>
+   </div>
+
+  <!-- popup box 3 end--> 
+
 
 
 

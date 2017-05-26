@@ -352,12 +352,13 @@ def dynamic_group_manage(request):
 
 @login_required
 def dynamic_group_records(request):
-    groups_obj = DynamicGroup.objects.all()
+    groups_obj = DynamicGroup.objects.order_by('id')
     groups_list = []
     for group_obj in groups_obj:
         group = {"id":group_obj.id,"GroupName":group_obj.GroupName,"GroupMembers":group_obj.GroupMembers}
         groups_list.append(group)
     return JsonResponse(groups_list,safe=False)
+
 
 
 
@@ -375,6 +376,40 @@ def dynamic_group_record_by_id(request):
     return JsonResponse(group,safe=False)
 
 
+
+@login_required
+def dynamic_group_del_record_by_id(request):
+    id = request.GET.get("id")
+    DynamicGroup.objects.filter(id=id).delete()
+    return JsonResponse({},safe=False)
+
+
+
+@login_required
+def dynamic_group_hosts_info(request):
+    GroupName = request.GET.get("GroupName")
+    GroupID = request.GET.get("GroupID")
+    group_obj = DynamicGroup.objects.get(id=GroupID)
+    GroupMembers_Str = group_obj.GroupMembers
+    GroupMembers_List = GroupMembers_Str.split(",")
+
+    hosts_list = []
+    
+    for hostname in GroupMembers_List:
+        host = {}
+        host["HostName"] = hostname
+        host['status'] = get_host_status(host['HostName'])
+        if host['status']:
+            host_meta_info = get_host_meta_info(host['HostName'])
+            host['osname_salt'] = host_meta_info['os'] + " " + host_meta_info['osrelease']
+            host['ip_salt'] = '|'.join(host_meta_info['ipv4'])
+        else:
+            pass
+        hosts_list.append(host)
+
+    return render(request,'jobapp/dynamic_group_hosts_info.html',{"hosts":hosts_list,"GroupName":GroupName})
+
+     
 # ----------------------
 # FOR DEBUG
 # ----------------------
@@ -387,7 +422,6 @@ if __name__ == "__main__":
     # print get_recent_success_tasks_nums()
     #get_failure_task_detail_info_test("20170518140245899698","W612-JENKDOCK-3")
     #print get_job_host_task_status("W612-JENKDOCK-4","20170523140452702260")
-
 
     pass
 

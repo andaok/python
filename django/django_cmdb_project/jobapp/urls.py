@@ -19,5 +19,7 @@ urlpatterns = [
     url(r'^hostname_base_bking_module/$',views.hostname_base_bking_module,name="hostname_base_bking_module"),
     url(r'^dynamicgroup/manage/$',views.dynamic_group_manage,name="dynamic_group_manage"),
     url(r'^dynamicgroup/show/$',views.dynamic_group_records,name="dynamic_group_show"),
-    url(r'^dynamicgroup/get/id$',views.dynamic_group_record_by_id,name="dynamic_group_record_by_id")
+    url(r'^dynamicgroup/get/id/$',views.dynamic_group_record_by_id,name="dynamic_group_record_by_id"),
+    url(r'^dynamicgroup/del/id/$',views.dynamic_group_del_record_by_id,name="dynamic_group_del_record_by_id"),
+    url(r'^dynamic_group_hosts_info/$',views.dynamic_group_hosts_info,name="dynamic_group_hosts_info"),
 ]
