@@ -1,0 +1,42 @@
+10.59.0.156:
+    input {
+            file {
+            tags => "10.59.0.156"
+             path => ["/usr/logs/elearningck100/elearning.ck100.access.log", "/usr/logs/elearningcnedu/elearning.cnedu.access.log", "/usr/logs/elearningjianshe99/elearning.jianshe99.access.log", "/usr/logs/elearningmed66/elearning.med66.access.log", "/usr/logs/elearningmed66_jboss/hadooplogs/log4j_kickout.log", "/usr/logs/elearningjianshe99_jboss/hadooplogs/log4j_kickout.log", "/usr/logs/elearningcnedu_jboss/hadooplogs/log4j_kickout.log", "/usr/logs/elearningck100_jboss/hadooplogs/log4j_kickout.log", "/usr/logs/elearningmed66_jboss/hadooplogs/log4j_hadoop.log", "/usr/logs/elearningjianshe99_jboss/hadooplogs/log4j_hadoop.log", "/usr/logs/elearningcnedu_jboss/hadooplogs/log4j_hadoop.log", "/usr/logs/elearningck100_jboss/hadooplogs/log4j_hadoop.log"]
+            }
+    }
+    output {
+            redis {
+            host => "223.202.30.62"
+            data_type => "list"
+            key => "logstash:hadooplog"
+            }
+    }
+10.59.0.42:
+    input {
+            file {
+            tags => "10.59.0.26"
+            path => ["/usr/logs/memberchinaacc/member.chinaacc.access.log",  "/usr/logs/mchinaacc/m.chinaacc.access.log", "/web/webserver/jboss/member.chinaacc.com_10100/logs/kickout/log4j_kickout.log"]
+            }
+    }
+    output {
+            redis {
+            host => "223.202.30.62"
+            data_type => "list"
+            key => "logstash:hadooplog"
+            }
+    }
+10.59.0.52:
+    input {
+            file {
+            tags => "10.59.0.26"
+            path => ["/usr/logs/memberchinaacc/member.chinaacc.access.log",  "/usr/logs/mchinaacc/m.chinaacc.access.log", "/web/webserver/jboss/member.chinaacc.com_10100/logs/kickout/log4j_kickout.log"]
+            }
+    }
+    output {
+            redis {
+            host => "223.202.30.62"
+            data_type => "list"
+            key => "logstash:hadooplog"
+            }
+    }

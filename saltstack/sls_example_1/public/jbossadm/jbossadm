@@ -1,0 +1,121 @@
+#!/bin/bash
+#####################
+#Date:2015-12-21
+#Author:ybzhang
+####################
+
+J_DIR=/web/webserver/jboss/
+if [ ! -d $J_DIR ]
+then
+   echo -e "\033[31mThe server is not jboss for installed\033[0m"
+   exit 1
+fi
+cd $J_DIR
+help()
+{
+    progname=$(basename $0)
+    echo "Usage: "
+    echo "    $progname start <pro-name>"
+    echo "    $progname stop <pro-name>"
+    echo "    $progname restart <pro-name>"
+    echo "    $progname --list|<appname> running and known domains"
+    exit 0
+}
+check_user() {
+    required_user="admin"
+    if [[ "$(whoami)" != "$required_user" ]]; then
+        echo "This script is supposed to be run as '$required_user'."
+        exit 0
+    fi
+}
+getpid()
+{
+        port=`echo $JBOSS_NAME|awk -F '_' '{print$2}'`
+        pid=`/usr/sbin/lsof -i:$port|awk '{print$2}'|sed -n '2p'`
+        echo $pid
+}
+
+startup()
+{
+        startup="nohup $JBOSS_NAME/bin/startup.sh"
+        echo -e "\033[32m$startup\033[0m"
+        $startup
+        sleep 5
+        nowpid=`getpid`
+        if [ "$nowpid" != "" ];then
+                echo -e "\033[32m$JBOSS_NAME success (pid:$nowpid)\033[0m"
+        else
+                echo -e "\033[31m$JBOSS_NAME fail (pid:$nowpid)\033[0m"
+        fi
+}
+
+clearcache()
+{
+        clearcache="rm -rf $JBOSS_NAME/work/*"
+        echo -e "\033[32m$clearcache\033[0m"
+        $clearcache
+}
+
+restart()
+{
+        unset pid
+        pid=`getpid`
+        echo $JBOSS_NAME
+        if [ "$pid" != "" ] ; then
+                echo -e "\033[32m$JBOSS_NAME shutdown (pid:$pid)\033[0m"
+                kill -9 $pid && clearcache && startup
+        else
+                startup
+        fi
+}
+
+list_pro() {
+    if [ "$1" == "list" ]; then
+        local _full=yes
+    else
+        echo "invoke with '--full' to see all supported domains"
+        exit
+    fi
+    printf "|%-35s|%5s|%5s|%10s|\n\n" JBOSS_NAME PORT PID  PRO_NAME
+    JBOSS_DIR=`ls /web/webserver/jboss/|grep -v nohup.out|grep -v logs`
+    for i in $JBOSS_DIR
+    do
+        JBOSS_NAME=$i
+        serverconf=/web/webserver/jboss/$i/conf/server.xml
+        if [ ! -f $serverconf ]
+        then
+            continue
+        fi
+        PORT=`echo $i|awk -F '_' '{print$2}'`
+        if ! echo $PORT|egrep -q ^[0-9]+$
+        then
+           continue
+        fi
+        PRO_NAME=`grep docBase $serverconf|awk '/<!--/{i++}/-->/{i--}!i&&!/-->/&&!/^$/'|awk '{print $3}'|awk -F "/" '{print$4}'|tr -d "\""`
+        FORMAT_NAME=`echo $PRO_NAME`
+        PID=`/usr/sbin/lsof -i:$PORT|awk '{print$2}'|sed -n '2p'`
+                #PID=`ps aux|grep $JBOSS_NAME|grep -v grep|awk '{print $2}'`
+        #if [ $? -eq 0 ]; then
+        #    DOMAIN_EXIST=yes
+        #else
+        #    DOMAIN_EXIST=no
+        #fi
+             printf "|\033[31m%-35s\033[0m|%5s|%5s|%10s\n\n" \
+               ${JBOSS_NAME:--} ${PORT:--} ${PID:--}  "${FORMAT_NAME:--}"
+    done
+}
+if [ ! $# -eq 1 ];then
+    help
+fi
+if [ "$1" == "list" ];then
+    list_pro $1
+    exit 0
+fi
+JBOSS_NAME=`ls $J_DIR|grep $1`
+if [ "$JBOSS_NAME" == "" ];then
+        echo -e "\033[31mno $1 project\033[0m"
+        exit 0
+else
+        check_user
+        restart
+fi

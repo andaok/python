@@ -1,0 +1,11 @@
+/usr/logs/wwwjianshe99/www.jianshe99.access.log /usr/logs/memberjianshe99/member.jianshe99.access.log /usr/logs/mjianshe99/m.jianshe99.access.log {
+    daily
+    compress
+    rotate 30
+    dateext
+    missingok
+    create
+    postrotate
+        /bin/kill -HUP `cat /web/webserver/nginx/logs/nginx.pid 2> /dev/null` 2> /dev/null || true
+    endscript
+}
