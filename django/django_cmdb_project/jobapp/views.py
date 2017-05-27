@@ -447,6 +447,47 @@ def salt_group_all(request):
  
 
 
+@login_required
+def salt_group_record_by_id(request):
+    group_id = request.GET.get("group_id")
+    group_obj = SaltGroup.objects.get(id=group_id)
+    group = {"group_id":group_obj.id,"GroupName":group_obj.GroupName,"GroupExpr":group_obj.GroupExpr}
+    return JsonResponse(group,safe=False)
+
+
+
+
+@login_required
+def salt_group_del_record_by_id(request):
+    group_id = request.GET.get("group_id")
+    SaltGroup.objects.filter(id=group_id).delete()
+    return JsonResponse({},safe=False)
+
+
+
+
+@login_required
+def salt_group_hosts_info(request):
+    group_id = request.GET.get('GroupID')
+    group_name = request.GET.get('GroupName')
+    
+    group_obj = SaltGroup.objects.get(id=group_id)
+    group_expr = group_obj.GroupExpr
+    
+    resp = get_salt_group_hosts(group_expr)
+
+    hosts_list = []
+
+    for hostname , host_obj in resp.iteritems():
+        host = {}
+        host["HostName"] = hostname
+        host["status"] = 1
+        host['osname_salt'] = host_obj['os'] + " " + host_obj['osrelease']
+        host['ip_salt'] = '|'.join(host_obj['ipv4'])
+        hosts_list.append(host)
+
+    return render(request,"jobapp/salt_group_hosts_info.html",{"hosts":hosts_list,"GroupName":group_name})
+
 
 # ----------------------
 # FOR DEBUG

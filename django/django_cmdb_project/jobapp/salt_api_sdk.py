@@ -50,17 +50,29 @@ def init_sys_env(target_hosts_list):
     print resp
 
 
+
 def state_sls_job_execute_real(target_hosts_list,action):
     local = salt.client.LocalClient()
     if action == "initsys":
         jid = local.cmd_async(target_hosts_list,'state.sls',['test.init_env'],expr_form='list',timeout=2)
     return jid
 
+
+
 def state_sls_job_execute_test(target_hosts_list,action):
     local = salt.client.LocalClient()
     if action == "initsys":
         jid = local.cmd_async(target_hosts_list,'state.sls',['test.init_env','test=true'],expr_form='list',timeout=2)
     return jid
+
+
+
+
+def get_salt_group_hosts(GroupExpr):
+    local = salt.client.LocalClient()
+    resp = local.cmd(GroupExpr,'grains.items',expr_form='compound',timeout=2)
+    return resp
+
 
 
 if __name__ == "__main__":
@@ -103,5 +115,6 @@ if __name__ == "__main__":
 
     #print get_host_meta_info("W612-JENKDOCK-3")
     #print get_host_status("BGP-NETAM-01")
-    init_sys_env(["W612-JENKDOCK-3","W612-JENKDOCK-4"])
+    #init_sys_env(["W612-JENKDOCK-3","W612-JENKDOCK-4"])
+    get_salt_group_hosts("G@os:CentOS")
     pass

@@ -24,4 +24,7 @@ urlpatterns = [
     url(r'^dynamic_group_hosts_info/$',views.dynamic_group_hosts_info,name="dynamic_group_hosts_info"),
     url(r'^saltgroup/manage/$',views.salt_group_manage,name="salt_group_manage"),
     url(r'^saltgroup/all/$',views.salt_group_all,name="salt_group_all"),
+    url(r'^saltgroup/get/id/$',views.salt_group_record_by_id,name="salt_group_record_by_id"),
+    url(r'^saltgroup/del/id/$',views.salt_group_del_record_by_id,name="salt_group_del_record_by_id"),
+    url(r'^salt_group_hosts_info/$',views.salt_group_hosts_info,name="salt_group_hosts_info"),
 ]

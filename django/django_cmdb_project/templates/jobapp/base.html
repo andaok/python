@@ -681,24 +681,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>3</td>
-                  <td>all_centos66</td>
-                  <td>G@os:centos 6.6</td>
-                  <td>管理</td>
-                </tr>
-                <tr>
-                  <td>2</td>
-                  <td>all_centos77</td>
-                  <td>G@os:centos 7.2</td>
-                  <td>管理</td>
-                </tr>
-                <tr>
-                  <td>1</td>
-                  <td>all_nginx</td>
-                  <td>G@lb:nginx</td>
-                  <td>管理</td>
-                </tr>
+
               </tbody>
             </table>
           
@@ -719,6 +702,8 @@
 
             <script type="text/javascript">
             $(document).ready(function() {
+
+               SaltGroupTableRender()
 
                function SaltGroupTableRender() {
                       $.get("{% url 'jobapp:salt_group_all'%}",{},function(data,retflag) {
@@ -750,9 +735,26 @@
                            })
                         } 
 
+              });
+
+              $('body').on('click','a[name="salt_group_edit_btn"]',function(){
+                   
+                   var group_id = $(this).attr("val")
+                   $.get("{% url 'jobapp:salt_group_record_by_id'%}",{group_id:group_id},function(data,retflag){
+                        group_name = data["GroupName"]
+                        group_expr = data["GroupExpr"]
+                        $("#salt_group_name").val(group_name)
+                        $("#salt_group_expr").val(group_expr)
+                   })
+              });
+
+              $('body').on('click','a[name="salt_group_del_btn"]',function(){
+                   var group_id = $(this).attr("val")
+                   $.get("{% url 'jobapp:salt_group_del_record_by_id'%}",{group_id:group_id},function(){
+                        SaltGroupTableRender()
+                   })
+
               })
-
-
 
             });
             </script>
@@ -768,7 +770,52 @@
   <!-- popup box 4 end -->
   
 
-  
+  <!-- popup box 5 start -->
+  <div class="modal fade" id="select_target_salt" tabindex="-1" role="dialog" aria-labelledby="myModalLabel1" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title" id="myModalLabel1">Salt组选择</h6>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          </div>
+          <div class="modal-body">
+              <div class="demo-section k-content">
+                <input id="salt_group" style="width: 100%" />
+              </div>
+            <script>
+                $(document).ready(function() {
+                   $("#salt_group").kendoDropDownList({
+                        dataTextField: "GroupName",
+                        dataValueField: "id",
+                        dataSource: {
+                            transport: {
+                                read: {
+                                    dataType: "json",
+                                    url: "{% url 'jobapp:salt_group_all'%}",
+                                }
+                            }
+                        }
+                    });
+
+                    var salt_group_data = $("#salt_group").data("kendoDropDownList")
+
+                    $("#salt_group_select_btn").click(function(){
+                        var GroupName = salt_group_data.text()
+                        var GroupID = salt_group_data.value()
+                        location.href = "/jobapp/salt_group_hosts_info?GroupName="+GroupName+"&"+"GroupID="+GroupID
+
+                    })
+                });
+            </script>
+          </div>
+          <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="salt_group_select_btn">确认</button>
+          </div>
+        </div>
+      </div>
+   </div>
+  <!-- popup box 5 end -->
+
 
 
     <!-- Bootstrap core JavaScript
