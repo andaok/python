@@ -12,7 +12,7 @@ from django.contrib.auth import authenticate,login,logout
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 
-from jobapp.models import DynamicGroup
+from jobapp.models import DynamicGroup , SaltGroup
 
 import json
 import MySQLdb
@@ -389,6 +389,7 @@ def dynamic_group_del_record_by_id(request):
 def dynamic_group_hosts_info(request):
     GroupName = request.GET.get("GroupName")
     GroupID = request.GET.get("GroupID")
+
     group_obj = DynamicGroup.objects.get(id=GroupID)
     GroupMembers_Str = group_obj.GroupMembers
     GroupMembers_List = GroupMembers_Str.split(",")
@@ -409,7 +410,44 @@ def dynamic_group_hosts_info(request):
 
     return render(request,'jobapp/dynamic_group_hosts_info.html',{"hosts":hosts_list,"GroupName":GroupName})
 
-     
+
+
+
+@login_required
+def salt_group_manage(request):
+    group_name = request.GET.get("group_name")
+    group_expr = request.GET.get("group_expr")
+    
+    retinfo = {}
+
+    try:
+        group_obj = SaltGroup.objects.get(GroupName=group_name)
+        group_obj.GroupExpr = group_expr
+        group_obj.save()
+        retinfo["operate"] = "update group %s"%group_name
+    except SaltGroup.DoesNotExist:
+        group_obj = SaltGroup(GroupName=group_name,GroupExpr=group_expr)
+        group_obj.save()
+        retinfo["operate"] = "create group %s"%group_name
+
+    return JsonResponse(retinfo,safe=False)
+
+
+
+
+
+@login_required
+def salt_group_all(request):
+    groups_obj = SaltGroup.objects.order_by('id')
+    groups_list = []
+    for group_obj in groups_obj:
+        group = {"id":group_obj.id,"GroupName":group_obj.GroupName,"GroupExpr":group_obj.GroupExpr}
+        groups_list.append(group)
+    return JsonResponse(groups_list,safe=False)
+ 
+
+
+
 # ----------------------
 # FOR DEBUG
 # ----------------------
@@ -422,7 +460,6 @@ if __name__ == "__main__":
     # print get_recent_success_tasks_nums()
     #get_failure_task_detail_info_test("20170518140245899698","W612-JENKDOCK-3")
     #print get_job_host_task_status("W612-JENKDOCK-4","20170523140452702260")
-
     pass
 
 

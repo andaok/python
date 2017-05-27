@@ -110,7 +110,7 @@
               <a class="nav-link active" href="#">分组管理</a>
            </li>
            <li class="nav-item">
-              <a class="nav-link" href="#" data-toggle="modal"> - SALT分组管理</a>
+              <a class="nav-link" href="#salt_group_manage" data-toggle="modal"> - SALT分组管理</a>
            </li>
            <li class="nav-item">
               <a class="nav-link" href="#dynamic_group_manage" data-toggle="modal"> - 动态分组管理</a>
@@ -287,7 +287,7 @@
             </table>
           
             <div style="margin-bottom:0px;">
-               <p>[ 组成员管理 ]</p>
+               <p>[ 组管理 ]</p>
             </div>
 
             <table class="table table-striped table-condensed">
@@ -658,6 +658,117 @@
   <!-- popup box 3 end--> 
 
 
+  <!-- popup box 4 start  -->
+      <div class="modal fade" id="salt_group_manage" tabindex="-1" role="dialog" aria-labelledby="myModalLabel1" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title" id="myModalLabel1">Salt分组管理</h6>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          </div>
+          <div class="modal-body">
+ 
+          <div style="margin-bottom:0px;">
+            <p>[ 已有Salt组 ]</p>
+          </div>
+            <table id="salt_group_table" class="table table-striped table-condensed">
+              <thead>
+                <tr>
+                  <td>ID</td>
+                  <td>组名</td>
+                  <td>表达式</td>
+                  <td>管理</td>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>3</td>
+                  <td>all_centos66</td>
+                  <td>G@os:centos 6.6</td>
+                  <td>管理</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>all_centos77</td>
+                  <td>G@os:centos 7.2</td>
+                  <td>管理</td>
+                </tr>
+                <tr>
+                  <td>1</td>
+                  <td>all_nginx</td>
+                  <td>G@lb:nginx</td>
+                  <td>管理</td>
+                </tr>
+              </tbody>
+            </table>
+          
+            <div style="margin-bottom:0px;">
+               <p>[ 组管理 ]</p>
+            </div>
+
+            <table>
+              <tr>
+                <td>
+                  <input type="text" class="form-control" id="salt_group_name" placeholder="组名">
+                </td>
+                <td>
+                  <input type="text" class="form-control" id="salt_group_expr" placeholder="表达式">
+                </td>
+              </tr>
+            </table>
+
+            <script type="text/javascript">
+            $(document).ready(function() {
+
+               function SaltGroupTableRender() {
+                      $.get("{% url 'jobapp:salt_group_all'%}",{},function(data,retflag) {
+                             $("#salt_group_table tbody").html("")
+                             for (i in data) {
+                                  id = data[i]["id"]
+                                  group_name = data[i]["GroupName"]
+                                  group_expr = data[i]["GroupExpr"]
+                                  $("#salt_group_table tbody").html(function(n,origHtml){
+                                       return "<tr><td>"+id+"</td><td>"+group_name+"</td><td>"+group_expr+"</td><td><a class='btn btn-outline-success my-2 my-sm-0' role='button' name='salt_group_edit_btn' val="+id+">编辑</a><a class='btn btn-outline-success my-2 my-sm-0' role='button' name='salt_group_del_btn' val="+id+">删除</a></td></tr>"+origHtml
+                                  })
+                             }
+                      })
+                  }
+
+
+              $("#salt_group_manage_btn").click(function(){
+                      var group_name = $("#salt_group_name").val()
+                      var group_expr = $("#salt_group_expr").val()
+                      if (group_name == "" || group_expr == "") 
+                        {
+                           alert("组名或组表达式为空！")
+                        }
+                      else 
+                        {
+                           $.get("{% url 'jobapp:salt_group_manage'%}",{group_name:group_name,group_expr:group_expr},function(data,retflag){
+                                alert(data['operate']+" "+retflag)
+                                SaltGroupTableRender()
+                           })
+                        } 
+
+              })
+
+
+
+            });
+            </script>
+
+
+          </div>
+          <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="salt_group_manage_btn">确认</button>
+          </div>
+        </div>
+      </div>
+   </div>
+  <!-- popup box 4 end -->
+  
+
+  
 
 
     <!-- Bootstrap core JavaScript
