@@ -802,8 +802,10 @@
                     $("#salt_group_select_btn").click(function(){
                         var GroupName = salt_group_data.text()
                         var GroupID = salt_group_data.value()
-                        location.href = "/jobapp/salt_group_hosts_info?GroupName="+GroupName+"&"+"GroupID="+GroupID
-
+                        
+                        //location.href = "/jobapp/salt_group_hosts_info?GroupName="+GroupName+"&"+"GroupID="+GroupID
+                        window.location.replace("/jobapp/salt_group_hosts_info?GroupName="+GroupName+"&"+"GroupID="+GroupID)
+                        
                     })
                 });
             </script>

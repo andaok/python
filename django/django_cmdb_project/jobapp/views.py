@@ -489,6 +489,29 @@ def salt_group_hosts_info(request):
     return render(request,"jobapp/salt_group_hosts_info.html",{"hosts":hosts_list,"GroupName":group_name})
 
 
+
+
+@login_required
+def cmd_run_job_execute(request):
+    target_hosts = request.POST['show_target_hosts']
+    cmd = request.POST['cmd_run_str']
+    is_test = request.POST.get('cmd_run_is_test')
+
+    target_hosts_list = target_hosts.split(",")
+    target_hosts_num = len(target_hosts_list)
+
+    if is_test == None:
+        # Real execute job
+        jid = cmd_run_job_execute_real(target_hosts_list,cmd)
+    else:
+        # test execute job
+        jid = cmd_run_job_execute_test(target_hosts_list,cmd)
+
+    
+    return render(request,'jobapp/cmdrun_exec_result_show.html',{"target_hosts":target_hosts,"target_hosts_num":target_hosts_num,"jid":jid,"is_test":is_test})
+
+
+
 # ----------------------
 # FOR DEBUG
 # ----------------------
