@@ -38,7 +38,7 @@
 
 <p id="target_hosts" val="{{target_hosts}}"></p>
 
-<div id="result" style="height:950px;#c3c3c3;background-color:black;color:white;overflow-y:auto;border-radius: 8px;margin-top:15px;font-family:Microsoft YaHei;font-size:17px;">
+<div id="result" style="height:950px;#c3c3c3;background-color:black;color:white;overflow-y:auto;border-radius: 8px;margin-top:15px;font-family:Microsoft YaHei;font-size:20px;">
 <p style="margin-top:15px;margin-left:10px;margin-bottom:0px;">[root@salt-master ~]#</p>
 </div>
 
@@ -73,14 +73,14 @@
                              if (retcode == 0) {
                              	
                              	$("#result").html(function(n,origHtml){
-                             		p1 = '<p style="margin-top:15px;margin-left:5px;margin-bottom:0px;">'+host+':</p>'
-                             		p2 = '<p style="margin-left:40px;margin-bottom:0px;">'+retdata+'</p>'
+                             		p1 = '<pre style="margin-top:15px;margin-left:5px;margin-bottom:0px;"><font color="green">'+host+':</font></pre>'
+                             		p2 = '<pre style="margin-left:40px;margin-bottom:0px;"><font color="white">'+retdata+'</font></pre>'
                              		return origHtml+p1+p2
                              	})
                              } else {
                              	$("#result").html(function(n,origHtml){
-                             		p1 = '<p style="margin-top:15px;margin-left:5px;margin-bottom:0px;">'+host+':</p>'
-                             		p2 = '<p style="margin-left:40px;margin-bottom:0px;">'+retdata+'</p>'
+                             		p1 = '<pre style="margin-top:15px;margin-left:5px;margin-bottom:0px;"><font color="red">'+host+':</font></pre>'
+                             		p2 = '<pre style="margin-left:40px;margin-bottom:0px;"><font color="white">'+retdata+'</font></pre>'
                              		return origHtml+p1+p2
                              	})
                              }
