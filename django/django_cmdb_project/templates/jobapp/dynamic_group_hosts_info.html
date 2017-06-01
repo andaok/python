@@ -108,9 +108,6 @@
                         <a class="nav-link" data-toggle="tab" href="#CmdRun">cmd.run</a>
                       </li>
                       <li class="nav-item">
-                        <a class="nav-link" href="#">shell</a>
-                      </li>
-                      <li class="nav-item">
                         <a class="nav-link" href="#">uploadfile</a>
                       </li>
                   </ul>
@@ -159,8 +156,9 @@
                     
 
                      
-                     <div id="CmdRun" class="tab-pane fade" role="tabpanel">
-
+                      <div id="CmdRun" class="tab-pane fade" role="tabpanel">
+                        <form method="post" action="{% url 'jobapp:cmd_run_job_execute' %}">
+                        {% csrf_token %}
                         <table class="table table-striped table-condensed table-border" style="margin-top:15px;">
                             <tr>
                               <td>目标:</td>
@@ -173,14 +171,9 @@
                                  <td>cmd.run</td>
                             </tr>
                             <tr>
-                                 <td style="vertical-align:middle;">动作:</td>
+                                 <td style="vertical-align:middle;">命令:</td>
                                  <td>
-                                    <select class="custom-select">
-                                      <option value="0" selected> please select cmd!</option>
-                                      <option value="1">uptime</option>
-                                      <option value="2">hostname</option>
-                                      <option value="3">who</option>
-                                    </select>
+                                     <textarea class="form-control" rows="3" name="cmd_run_str" id="cmd_run_str"></textarea>
                                  </td>
                             </tr>
                             <tr>
@@ -195,8 +188,9 @@
                               </td>
                             </tr>
                         </table>
-
+                    </form>
                     </div>
+
 
                    </div>
 
@@ -275,6 +269,16 @@
                 return false
            }
       })
+
+
+      $("#cmd_run_btn").click(function(){
+           var cmd_run_str = $("#cmd_run_str").val()
+           if (cmd_run_str == "") {
+              $('#job_exec_tip_inter').html("<font color='red'><strong>请输入执行命令！</strong></font>")
+              return false
+           }
+      })
+
 
     })
   </script>

@@ -39,7 +39,7 @@
 <p id="target_hosts" val="{{target_hosts}}"></p>
 
 <div id="result" style="height:950px;#c3c3c3;background-color:black;color:white;overflow-y:auto;border-radius: 8px;margin-top:15px;font-family:Microsoft YaHei;font-size:20px;">
-<p style="margin-top:15px;margin-left:10px;margin-bottom:0px;">[root@salt-master ~]#</p>
+<pre style="margin-top:15px;margin-left:10px;margin-bottom:0px;"><font color="white">[root@salt-master ~]#</font></pre>
 </div>
 
 
@@ -51,6 +51,7 @@
 			var jid = $("td#jid").attr("val")
 			
             var hosts =  $("#target_hosts").attr("val")
+
            
 			if (hosts == "") {
 				clearInterval(IntChkObj)
@@ -86,7 +87,17 @@
                              }
 
                              update_hosts_array.splice(jQuery.inArray(host,update_hosts_array),1);
-                             
+
+                             return_hosts_num = $('#return_hosts_num').text()
+                             return_hosts_num = new Number(return_hosts_num)
+                             return_hosts_num = return_hosts_num + 1
+                             $('#return_hosts_num').text(return_hosts_num)
+
+                             no_return_hosts_num = $('#no_return_hosts_num').text()
+                             no_return_hosts_num = new Number(no_return_hosts_num)
+                             no_return_hosts_num = no_return_hosts_num - 1
+                             $('#no_return_hosts_num').text(no_return_hosts_num)
+                               
                          }
 
                      });
