@@ -78,9 +78,14 @@ def get_salt_group_hosts(GroupExpr):
 
 def test():
     local = salt.client.LocalClient()
-    resp = local.cmd('*','cmd.run',['uptime && hostname;rpm -qa | grep httpd','test=true'],timeout=2)
+    resp = local.cmd('*','cp.get_file',['salt://test.txt','/tmp/zxczxcz/test.txt','makedirs=true','gzip=5'],timeout=2)
     return  resp
 
+
+def test1():
+    local = salt.client.LocalClient()
+    resp = local.cmd('*','cp.get_url',['http://172.29.19.13/PatchForCentos_V1.4.zip','/tmp/zxczxcz123/test.zip','makedirs=true'],timeout=2)
+    return  resp
 
 
 
@@ -95,6 +100,7 @@ def cmd_run_job_execute_test(target_hosts_list,cmd):
     local = salt.client.LocalClient()
     jid = local.cmd_async(target_hosts_list,'cmd.run',[cmd,'test=true'],expr_form='list',timeout=2)
     return jid
+
 
 
 
@@ -141,5 +147,5 @@ if __name__ == "__main__":
     #print get_host_status("BGP-NETAM-01")
     #init_sys_env(["W612-JENKDOCK-3","W612-JENKDOCK-4"])
     #$get_salt_group_hosts("G@os:CentOS")
-    print test()
+    print test1()
     pass

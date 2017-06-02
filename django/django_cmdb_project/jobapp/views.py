@@ -11,9 +11,11 @@ from django.http import HttpResponse,JsonResponse,HttpResponseRedirect
 from django.contrib.auth import authenticate,login,logout
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 
 from jobapp.models import DynamicGroup , SaltGroup
 
+import os
 import json
 import MySQLdb
 from salt_api_sdk import *
@@ -493,6 +495,7 @@ def salt_group_hosts_info(request):
 
 @login_required
 def cmd_run_job_execute(request):
+    
     target_hosts = request.POST['show_target_hosts']
     cmd = request.POST['cmd_run_str']
     is_test = request.POST.get('cmd_run_is_test')
@@ -510,6 +513,26 @@ def cmd_run_job_execute(request):
     
     return render(request,'jobapp/cmdrun_exec_result_show.html',{"target_hosts":target_hosts,"target_hosts_num":target_hosts_num,"jid":jid,"is_test":is_test})
 
+
+
+@login_required
+def upload_file_job_execute(request):
+    pass
+
+
+@login_required
+@csrf_exempt
+def upload(request):
+    if request.method == "POST":    
+        myFile =request.FILES.get("files", None)    
+        if not myFile:  
+            return HttpResponse("no files for upload!")  
+        destination = open(os.path.join("/tmp/",myFile.name),'wb+')    
+        for chunk in myFile.chunks():      # 分块写入文件  
+            destination.write(chunk)  
+        destination.close()  
+        return HttpResponse("upload over!")  
+    return render(request,'jobapp/upload.html',{})
 
 
 # ----------------------

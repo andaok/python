@@ -28,4 +28,6 @@ urlpatterns = [
     url(r'^saltgroup/del/id/$',views.salt_group_del_record_by_id,name="salt_group_del_record_by_id"),
     url(r'^salt_group_hosts_info/$',views.salt_group_hosts_info,name="salt_group_hosts_info"),
     url(r'^cmd_run_job_execute/$',views.cmd_run_job_execute,name="cmd_run_job_execute"),
+    url(r'^upload_file_job_execute/$',views.upload_file_job_execute,name="upload_file_job_execute"),
+    url(r'^upload/$',views.upload,name="upload"),
 ]

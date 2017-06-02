@@ -109,7 +109,7 @@
                         <a class="nav-link" data-toggle="tab" href="#CmdRun">cmd.run</a>
                       </li>
                       <li class="nav-item">
-                        <a class="nav-link" href="#">uploadfile</a>
+                        <a class="nav-link" data-toggle="tab"  href="#UploadFile">uploadfile</a>
                       </li>
                   </ul>
                
@@ -194,7 +194,7 @@
 
 
                      <div id="UploadFile" class="tab-pane fade" role="tabpanel">
-                        <form method="post" action="{% url 'jobapp:cmd_run_job_execute' %}">
+                        <form method="post" action="{% url 'jobapp:upload_file_job_execute' %}">
                         {% csrf_token %}
                         <table class="table table-striped table-condensed table-border" style="margin-top:15px;">
                             <tr>
@@ -204,32 +204,36 @@
                               </td>
                             </tr>
                             <tr>
-                                 <td>函数:</td>
-                                 <td>cmd.run</td>
-                            </tr>
-                            <tr>
-                                 <td style="vertical-align:middle;">命令:</td>
+                                 <td>动作:</td>
                                  <td>
-                                     <textarea class="form-control" rows="3" name="cmd_run_str" id="cmd_run_str"></textarea>
+                                   <input type="radio"  name="upfile_file_option" id="upload_file_local" value="local" checked>上传本地文件
+                                   <br>
+                                   <input type="radio"  name="upfile_file_option" id="upload_file_url" value="url">上传URL文件
                                  </td>
                             </tr>
                             <tr>
-                              <td>测试:</td>
-                              <td>
-                                <input name="cmd_run_is_test" value="1" type="checkbox" checked="checked" />
-                              </td>
+                                 <td style="vertical-align:middle;">源路径:</td>
+                                 <td>
+                                     <div id="file_path_style">
+                                       <input type="file"  id="source_path_local_input" name="source_path_local_input">
+                                     </div>
+                                 </td>
+                            </tr>
+                            <tr>
+                                 <td style="vertical-align:middle;">目标目录:</td>
+                                 <td>
+                                     <input class="form-control" type="text" id="dest_path_local_input" name="dest_path_local_input">
+                                 </td>
                             </tr>
                             <tr>
                               <td colspan="2">
-                                <button id="cmd_run_btn" class="btn btn-primary btn-block">确认执行</button>
+                                <button id="upload_file_btn" class="btn btn-primary btn-block">确认执行</button>
                               </td>
                             </tr>
                         </table>
                     </form>
                     </div>
                     
-
-
                    </div>
           </div>
           
@@ -316,6 +320,18 @@
            }
       })
 
+
+      $("input:radio[name='upfile_file_option']").click(function(){
+
+           var upload_file_option = $(this).attr("id")
+
+           if (upload_file_option == "upload_file_local") {
+               $("#file_path_style").html('<input type="file" class="form-control-file" id="source_path_local_input" name="source_path_local_input" aria-describedby="fileHelp">')
+           } else {
+               $("#file_path_style").html('<input class="form-control" type="url" id="source_path_url_input" name="source_path_url_input">')
+           }
+           
+      })
 
     })
   </script>
