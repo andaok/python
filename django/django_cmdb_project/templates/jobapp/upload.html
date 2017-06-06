@@ -24,6 +24,7 @@
             <div class="box">
                 <h4>Information</h4>
                 <p>
+                    {{user}}
                     The Upload is able to upload files out-of-band using the
                     HTML5 File API with fallback for legacy browsers.
                 </p>
@@ -44,13 +45,22 @@
             </div>
 
             <script>
+                function onComplete(e) {
+                    alert("complete")
+                }
+                function onSuccess(e) {
+                    alert("success")
+                }
+
                 $(document).ready(function() {
                     $("#files").kendoUpload({
                         async: {
                             saveUrl: "/jobapp/upload/",
-                            removeUrl: "remove",
+                            //removeUrl: "remove",
                             autoUpload: false
-                        }
+                        },
+                        complete: onComplete,
+                        success: onSuccess
                     });
                 });
             </script>

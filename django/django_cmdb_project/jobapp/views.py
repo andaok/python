@@ -523,6 +523,7 @@ def upload_file_job_execute(request):
 @login_required
 @csrf_exempt
 def upload(request):
+    userobj = request.user
     if request.method == "POST":    
         myFile =request.FILES.get("files", None)    
         if not myFile:  
@@ -532,7 +533,7 @@ def upload(request):
             destination.write(chunk)  
         destination.close()  
         return HttpResponse("upload over!")  
-    return render(request,'jobapp/upload.html',{})
+    return render(request,'jobapp/upload.html',{"user":userobj})
 
 
 # ----------------------
