@@ -31,4 +31,6 @@ urlpatterns = [
     url(r'^upload_file_job_execute/$',views.upload_file_job_execute,name="upload_file_job_execute"),
     url(r'^upload/$',views.upload,name="upload"),
     url(r'^user/files/show/$',views.user_dir_files_list,name="user_files_show"),
+    url(r'^get_upload_job_hosts_task_status/$',views.get_upload_job_hosts_task_status,name="get_upload_job_hosts_task_status"),
+    url(r'^get_upload_file_progress/$',views.get_upload_file_progress,name="get_upload_file_progress"),
 ]

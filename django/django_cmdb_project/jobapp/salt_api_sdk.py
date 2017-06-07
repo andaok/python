@@ -109,6 +109,12 @@ def upload_file(target_hosts_list,user,source_file_name,dest_file_path):
     return  jid
 
 
+def get_file_stats(host,file_path):
+    local = salt.client.LocalClient()
+    resp = local.cmd(host,'file.stats',[file_path],timeout=2)
+    return resp
+
+
 
 if __name__ == "__main__":
 
@@ -152,5 +158,6 @@ if __name__ == "__main__":
     #print get_host_status("BGP-NETAM-01")
     #init_sys_env(["W612-JENKDOCK-3","W612-JENKDOCK-4"])
     #$get_salt_group_hosts("G@os:CentOS")
-    print test1()
+    #print test1()
+    print get_file_stats("W612-JENKDOCK-3","/tmp/test.txt")["W612-JENKDOCK-3"]["size"]
     pass

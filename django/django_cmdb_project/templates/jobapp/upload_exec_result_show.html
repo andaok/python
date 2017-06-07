@@ -15,6 +15,8 @@
 			<td id="jid" val="{{ jid }}">
 			[ JID: {{ jid }} ]
 			</td>
+            <td id="source_file_name" val="{{source_file_name}}"></td>
+            <td id="dest_file_path" val="{{dest_file_path}}"></td>
 		</tr>
 		</tbody>
 	</table>
@@ -29,7 +31,7 @@
 			已返回主机数: <span class="badge badge-pill badge-primary"><font data-toggle="tooltip" title="" data-original-title="
 已返回数据的主机，包括成功和失败的." id="return_hosts_num">0</font></span> , 
 			未返回主机数: <span class="badge badge-pill badge-primary"><font data-toggle="tooltip" title="" data-original-title="
-未返回数据的主机，minion未启动或和master断开."  id="no_return_hosts_num">{{target_hosts_num}}</font></span>
+未返回数据的主机，是正在运行的主机，如长时间未返回，minion可能未启动或和master断开."  id="no_return_hosts_num">{{target_hosts_num}}</font></span>
 			]
 </div>
 
@@ -39,9 +41,11 @@
 			<tr>
 				<td>序号</td>
 				<td>主机名</td>
-				<td></td>
+				<td>源文件</td>
+				<td>目的路径</td>
+				<td>文件大小</td>
 				<td>状态</td>
-				<td>详情</td>
+				<td>进度</td>
 			</tr>
 		</thead>
 		<tbody>
@@ -49,10 +53,17 @@
 			<tr>
 				<td>{{ forloop.counter }}</td>
 				<td>{{ host }}</td>
-				<td id="check" val="{{ host }}"><img src="{% static 'images/loading1.gif'%}"></td>
+				<td>{{ source_file_name }}</td>
+				<td>{{ dest_file_path }}</td>
 				<td>
-					<a class="btn btn-outline-success my-2 my-sm-0 disabled"  role="button" id="{{host}}" val="{{jid}}|{{host}}" name="job_host_task_detail_btn" href="#job_host_task_detail_info" data-toggle="modal">Detail</a>
+					{% if source_file_size == 0 %}
+					小于1MB
+					{% else %}
+					{{ source_file_size }}MB
+					{% endif%}
 				</td>
+				<td id="check" val="{{ host }}"><img src="{% static 'images/loading1.gif'%}"></td>
+				<td val="{{ host }}_prog"></td>
 			</tr>
 		{% endfor %}
 		</tbody>
@@ -61,41 +72,14 @@
 
 
 
-<!-- popup box start -->
-    <div class="modal fade" id="job_host_task_detail_info" tabindex="-1" role="dialog" aria-labelledby="myModalLabel1" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-      <div class="modal-dialog modal-lg" style="height:850px; overflow:scroll;">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h6 class="modal-title" id="myModalLabel1">执行结果</h6>
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          </div>
-          <div class="modal-body" >
-          	<pre id="result">
-          	</pre>
-          </div>
-          <div class="modal-footer">
-          </div>
-        </div>
-      </div>
-   </div>
-<!-- popup box end   --> 
-
-
-<style>
-    pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
-    .string { color: green; }
-    .number { color: darkorange; }
-    .boolean { color: blue; }
-    .null { color: magenta; }
-    .key { color: red; }
-</style>
-
-
 <script type="text/javascript">
 
 		function IntervalCheck(jid){
 
 			var jid = $("td#jid").attr("val")
+			var source_file_name = $("td#source_file_name").attr("val")
+			var dest_file_path = $("td#dest_file_path").attr("val")
+
 			var hosts = ""
 
 			$("td#check").each(function(){
@@ -106,15 +90,15 @@
 
            
 			if (hosts == "") {
-				//alert("no host le ")
 				clearInterval(IntChkObj)
 			} else {
                 hosts = hosts.substr(0,hosts.length-1)
-                $.getJSON('/jobapp/get_job_hosts_task_status/',{hosts:hosts,jid:jid},function(data,status){
+                // -----------------------------------------
+                $.getJSON('/jobapp/get_upload_job_hosts_task_status/',{hosts:hosts,jid:jid},function(data,status){
                 	if (data != "") {
                 	    DataArray = eval(data)
                 	    for (i in DataArray) {
-                		   //$('#show').html(DataArray[i]['host'] + "," + DataArray[i]['status'])
+                		   
                 		   host = DataArray[i]['host']
                 		   status = DataArray[i]['status']
 
@@ -124,7 +108,7 @@
                 		   	  $("td[val="+host+"]").html("<font color='red'><strong>FAILURE</strong></font>")
                 		   }
                 		   $("td[val="+host+"]").removeAttr("id")
-                		   $("#"+host).removeClass("disabled")
+                		  
                 	    }
                         
                         target_hosts_num = $("font#target_hosts_num").attr("val")
@@ -142,49 +126,32 @@
                 	}
 
                 })
+                // -----------------------------------------
+
+                // ------------------------------------------
+                $.getJSON('/jobapp/get_upload_file_progress/',{hosts:hosts,jid:jid,source_file_name:source_file_name,dest_file_path:dest_file_path},function(data,status){
+                      if (data != "") {
+                      	 DataArray = eval(data)
+                      	 for (i in DataArray) {
+                      	   host = DataArray[i]['host']
+                		   prog = DataArray[i]['prog']
+                		   $("td[val="+host+"_prog]").html("<font color='green'><strong>"+prog+"%</strong></font>")
+                      	 }
+                      }
+                })
+                // ------------------------------------------
+
+
 			}
 		}
 
     
-    //--------------------------------
-    function syntaxHighlight(json) {
-	    if (typeof json != 'string') {
-	        json = JSON.stringify(json, undefined, 2);
-	    }
-	    json = json.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
-	    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
-	        var cls = 'number';
-	        if (/^"/.test(match)) {
-	            if (/:$/.test(match)) {
-	                cls = 'key';
-	            } else {
-	                cls = 'string';
-	            }
-	        } else if (/true|false/.test(match)) {
-	            cls = 'boolean';
-	        } else if (/null/.test(match)) {
-	            cls = 'null';
-	        }
-	        return '<span class="' + cls + '">' + match + '</span>';
-	    });
-    }
-    //--------------------------------
 
 
 	$(document).ready(function(){
     
-		IntChkObj=setInterval("IntervalCheck()",1000)
+		IntChkObj=setInterval("IntervalCheck()",2000)
 
-		$('[name="job_host_task_detail_btn"]').click(function(){
-			ArgsArray = $(this).attr("val").split("|")
-			jid = ArgsArray[0]
-			host = ArgsArray[1]
-			$.getJSON('/jobapp/get_job_host_task_info/',{host:host,jid:jid},function(data){
-                DataArray = eval(data)
-                //alert(DataArray[0]["info"])
-                $('#result').html(syntaxHighlight(DataArray[0]["info"]));
-            })
-		})
 	})
 
 </script>

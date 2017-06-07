@@ -118,6 +118,19 @@ def get_job_host_task_status(host,jid):
     return status
 
 
+
+def get_upload_job_host_task_status(host,jid):
+    sql = "select full_ret from salt_returns where jid='%s' and id='%s'"%(jid,host)
+    Records_num, Records_tuple = execute_sql(sql)
+    if Records_num == 0 or Records_num == None:
+        status = None
+    else:
+        status = json.loads(Records_tuple[0][0])['return']
+
+    return status
+
+
+
 def job_host_task_info(host,jid):
     sql = "select full_ret from salt_returns where jid='%s' and id='%s'"%(jid,host)
     _, Records_tuple = execute_sql(sql)
@@ -313,7 +326,57 @@ def get_job_hosts_task_status(request):
     #hosts_status = [{'host':'w26','status':1},{'host':'456','status':0}]
 
     return JsonResponse(hosts_status,safe=False)
+ 
+
+
+
+@login_required
+def get_upload_job_hosts_task_status(request):
+    hosts = request.GET['hosts']
+    jid = request.GET['jid']
     
+    host_list = hosts.split(",")
+    hosts_status = []
+
+    for host in host_list:
+        
+        status = get_upload_job_host_task_status(host,jid)
+
+        if status != None:
+            if status != "" and status != "false":
+                status = 0
+            host_status = {'host':host,'status':status}
+            hosts_status.append(host_status)
+    
+    return JsonResponse(hosts_status,safe=False)    
+
+
+
+@login_required
+def get_upload_file_progress(request):
+    user = request.user
+    user_dir = "/srv/salt/upload_files/%s/"%user
+
+    hosts = request.GET['hosts']
+    jid = request.GET['jid']
+    source_file_name = request.GET["source_file_name"]
+    dest_file_path = request.GET["dest_file_path"]
+ 
+    source_file_path = os.path.join(user_dir,source_file_name)
+    source_file_size = os.path.getsize(source_file_path)
+
+    host_list = hosts.split(",")
+    hosts_prog = []
+
+    for host in host_list:
+        size = get_file_stats(host,dest_file_path)[host]["size"]
+        prog = "%.0f"%(float(size)/float(source_file_size)*100)
+        host_prog = {'host':host,'prog':prog}
+        hosts_prog.append(host_prog)
+
+    return JsonResponse(hosts_prog,safe=False)
+
+
 
 @login_required
 def get_job_host_task_info(request):
@@ -519,17 +582,23 @@ def cmd_run_job_execute(request):
 @login_required
 def upload_file_job_execute(request):
     user = request.user
+    user_dir = "/srv/salt/upload_files/%s/"%user
 
     source_file_name = request.POST.get("source_file")
     target_hosts = request.POST.get("show_target_hosts")
     dest_dir = request.POST.get("dest_dir")
 
     target_hosts_list = target_hosts.split(",")
+    target_hosts_num = len(target_hosts_list)
+    source_file_path = os.path.join(user_dir,source_file_name)
     dest_file_path = dest_dir + os.sep + source_file_name
     
+    source_file_size = os.path.getsize(source_file_path)/1024/1024
+
     jid = upload_file(target_hosts_list,user,source_file_name,dest_file_path)
     
-    return render(request,'jobapp/upload_exec_result_show.html',{})
+    return render(request,'jobapp/upload_exec_result_show.html',{"target_hosts_list":target_hosts_list,"target_hosts_num":target_hosts_num,"jid":jid,"source_file_name":source_file_name,"dest_file_path":dest_file_path,"source_file_size":source_file_size})
+
 
 
 

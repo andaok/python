@@ -364,6 +364,14 @@
            }
       })
 
+      $("#upload_file_btn").click(function(){
+          dest_dir = $("#dest_dir").val()
+          if (dest_dir == "") {
+             $('#job_exec_tip_inter').html("<font color='red'><strong> 请输入目标目录！</strong></font>")
+             return false
+          }
+      })
+
 
       $("#cmd_run_btn").click(function(){
            var cmd_run_str = $("#cmd_run_str").val()
