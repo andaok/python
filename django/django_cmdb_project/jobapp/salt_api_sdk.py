@@ -159,5 +159,5 @@ if __name__ == "__main__":
     #init_sys_env(["W612-JENKDOCK-3","W612-JENKDOCK-4"])
     #$get_salt_group_hosts("G@os:CentOS")
     #print test1()
-    print get_file_stats("W612-JENKDOCK-3","/tmp/test.txt")["W612-JENKDOCK-3"]["size"]
+    print get_file_stats("W612-JENKDOCK-3","/tmp/test.txt")
     pass

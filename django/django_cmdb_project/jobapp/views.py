@@ -369,7 +369,10 @@ def get_upload_file_progress(request):
     hosts_prog = []
 
     for host in host_list:
-        size = get_file_stats(host,dest_file_path)[host]["size"]
+        try:
+            size = get_file_stats(host,dest_file_path)[host]["size"]
+        except KeyError:
+            size = 0
         prog = "%.0f"%(float(size)/float(source_file_size)*100)
         host_prog = {'host':host,'prog':prog}
         hosts_prog.append(host_prog)
