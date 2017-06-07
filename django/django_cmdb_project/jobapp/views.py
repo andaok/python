@@ -520,20 +520,42 @@ def upload_file_job_execute(request):
     pass
 
 
+
+
 @login_required
 @csrf_exempt
 def upload(request):
-    userobj = request.user
+    user = request.user
+    user_dir = "/srv/salt/upload_files/%s/"%user
+    if not os.path.isdir(user_dir):os.makedirs(user_dir)
     if request.method == "POST":    
         myFile =request.FILES.get("files", None)    
         if not myFile:  
             return HttpResponse("no files for upload!")  
-        destination = open(os.path.join("/tmp/",myFile.name),'wb+')    
-        for chunk in myFile.chunks():      # 分块写入文件  
+        destination = open(os.path.join(user_dir,myFile.name),'wb+')    
+        for chunk in myFile.chunks():      
             destination.write(chunk)  
         destination.close()  
-        return HttpResponse("upload over!")  
-    return render(request,'jobapp/upload.html',{"user":userobj})
+        return HttpResponse("")  
+
+
+
+
+@login_required
+def user_dir_files_list(request):
+    user = request.user
+    user_dir = "/srv/salt/upload_files/%s/"%user
+    if not os.path.isdir(user_dir):
+        os.makedirs(user_dir)
+    filename_list = os.listdir(user_dir)
+    files_list = []
+    for filename in filename_list:
+        file = {"FileName":filename}
+        files_list.append(file)
+    return JsonResponse(files_list,safe=False)
+
+
+
 
 
 # ----------------------

@@ -207,11 +207,34 @@
                                  <td style="vertical-align:middle;">源文件:</td>
                                  <td>
                                       <div class="row">
-
-                                      <div class="col-md-7"><input id="source_file"></div>
-                                      <div class="col-md-3"><a class="btn btn-outline-success my-2 my-sm-0" id="upload_file_to_master_btn" href="#" role="button">上传</a></div>
-
+                                      <div class="col-md-8">
+                                         <input id="source_file">
                                       </div>
+                                      <div class="col-md-4"><a class="btn btn-outline-success my-2 my-sm-0" id="upload_file_to_master_btn" role="button" href="#upload_file_to_master_window" data-toggle="modal">上传</a></div>
+                                      </div>
+                                      
+                                      <script type="text/javascript">
+                                          function load_files_list() {
+                                                  $("#source_file").kendoDropDownList({
+                                                  dataTextField: "FileName",
+                                                  dataValueField: "FileName",
+                                                  dataSource: {
+                                                      transport: {
+                                                          read: {
+                                                              dataType: "json",
+                                                              url: "/jobapp/user/files/show",
+                                                          }
+                                                      }
+                                                  }
+                                              });
+                                          }
+
+                                          $(document).ready(function() {
+                                              load_files_list()
+                                          });
+                                      </script>
+
+
                                  </td>
                             </tr>
                             <tr>
@@ -228,8 +251,10 @@
                         </table>
                     </form>
                     </div>
-                    
-                   </div>
+
+
+                  
+               </div>
           </div>
           
 
@@ -239,6 +264,40 @@
    </div>
 <!-- popup box end   --> 
 
+
+<!-- popup box start -->
+    <div class="modal fade" id="upload_file_to_master_window" tabindex="-1" role="dialog" aria-labelledby="myModalLabel1" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title" id="myModalLabel1">Upload File To Master</h6>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          </div>
+          <div class="modal-body">
+          <input name="files" id="files" type="file" />
+            <script>
+                function onSuccess(e) {
+                    load_files_list()
+                }
+
+                $(document).ready(function() {
+                    $("#files").kendoUpload({
+                        async: {
+                            saveUrl: "/jobapp/upload/",
+                            //removeUrl: "remove",
+                            autoUpload: true
+                        },
+                        success: onSuccess
+                    });
+                });
+            </script>
+          </div>
+          <div class="modal-footer">
+          </div>
+        </div>
+      </div>
+   </div>
+<!-- popup box end   --> 
 
 
 

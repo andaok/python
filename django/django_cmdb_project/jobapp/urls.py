@@ -30,4 +30,5 @@ urlpatterns = [
     url(r'^cmd_run_job_execute/$',views.cmd_run_job_execute,name="cmd_run_job_execute"),
     url(r'^upload_file_job_execute/$',views.upload_file_job_execute,name="upload_file_job_execute"),
     url(r'^upload/$',views.upload,name="upload"),
+    url(r'^user/files/show/$',views.user_dir_files_list,name="user_files_show"),
 ]
