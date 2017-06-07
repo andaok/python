@@ -370,7 +370,13 @@
       })
 
       $("#upload_file_btn").click(function(){
+          source_file_obj = $("#source_file").data("kendoDropDownList")
+          FileName = source_file_obj.text()
           dest_dir = $("#dest_dir").val()
+          if (FileName == "") {
+              $('#job_exec_tip_inter').html("<font color='red'><strong>请先上传文件到Master,再选择其作为源文件！</strong></font>")
+              return false
+          }
           if (dest_dir == "") {
              $('#job_exec_tip_inter').html("<font color='red'><strong> 请输入目标目录！</strong></font>")
              return false
