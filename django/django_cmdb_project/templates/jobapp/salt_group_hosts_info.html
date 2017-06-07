@@ -208,7 +208,7 @@
                                  <td>
                                       <div class="row">
                                       <div class="col-md-8">
-                                         <input id="source_file">
+                                         <input id="source_file" name="source_file">
                                       </div>
                                       <div class="col-md-4"><a class="btn btn-outline-success my-2 my-sm-0" id="upload_file_to_master_btn" role="button" href="#upload_file_to_master_window" data-toggle="modal">上传</a></div>
                                       </div>
@@ -234,13 +234,12 @@
                                           });
                                       </script>
 
-
                                  </td>
                             </tr>
                             <tr>
                                  <td style="vertical-align:middle;">目标目录:</td>
                                  <td>
-                                     <input class="form-control" type="text" id="dest_path_local_input" name="dest_path_local_input">
+                                     <input class="form-control" type="text" id="dest_dir" name="dest_dir">
                                  </td>
                             </tr>
                             <tr>
@@ -270,7 +269,7 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h6 class="modal-title" id="myModalLabel1">Upload File To Master</h6>
+            <h6 class="modal-title" id="myModalLabel1">UPLOAD FILE TO MASTER</h6>
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
           </div>
           <div class="modal-body">

@@ -515,10 +515,21 @@ def cmd_run_job_execute(request):
 
 
 
+
 @login_required
 def upload_file_job_execute(request):
-    pass
+    user = request.user
 
+    source_file_name = request.POST.get("source_file")
+    target_hosts = request.POST.get("show_target_hosts")
+    dest_dir = request.POST.get("dest_dir")
+
+    target_hosts_list = target_hosts.split(",")
+    dest_file_path = dest_dir + os.sep + source_file_name
+    
+    jid = upload_file(target_hosts_list,user,source_file_name,dest_file_path)
+    
+    return render(request,'jobapp/upload_exec_result_show.html',{})
 
 
 
