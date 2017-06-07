@@ -108,7 +108,7 @@
                         <a class="nav-link" data-toggle="tab" href="#CmdRun">cmd.run</a>
                       </li>
                       <li class="nav-item">
-                        <a class="nav-link" href="#">uploadfile</a>
+                        <a class="nav-link" data-toggle="tab"  href="#UploadFile">uploadfile</a>
                       </li>
                   </ul>
                
@@ -191,6 +191,65 @@
                     </form>
                     </div>
 
+                    <div id="UploadFile" class="tab-pane fade" role="tabpanel">
+                        <form method="post" action="{% url 'jobapp:upload_file_job_execute' %}">
+                        {% csrf_token %}
+                        <table class="table table-striped table-condensed table-border" style="margin-top:15px;">
+                            <tr>
+                              <td>目标:</td>
+                              <td>
+                                  <textarea class="form-control" rows="3" name="show_target_hosts" readonly></textarea>
+                              </td>
+                            </tr>
+                            <tr>
+                                 <td style="vertical-align:middle;">源文件:</td>
+                                 <td>
+                                      <div class="row">
+                                      <div class="col-md-8">
+                                         <input id="source_file" name="source_file">
+                                      </div>
+                                      <div class="col-md-4"><a class="btn btn-outline-success my-2 my-sm-0" id="upload_file_to_master_btn" role="button" href="#upload_file_to_master_window" data-toggle="modal">上传</a></div>
+                                      </div>
+                                      
+                                      <script type="text/javascript">
+                                          function load_files_list() {
+                                                  $("#source_file").kendoDropDownList({
+                                                  dataTextField: "FileName",
+                                                  dataValueField: "FileName",
+                                                  dataSource: {
+                                                      transport: {
+                                                          read: {
+                                                              dataType: "json",
+                                                              url: "/jobapp/user/files/show",
+                                                          }
+                                                      }
+                                                  }
+                                              });
+                                          }
+
+                                          $(document).ready(function() {
+                                              load_files_list()
+                                          });
+                                      </script>
+
+                                 </td>
+                            </tr>
+                            <tr>
+                                 <td style="vertical-align:middle;">目标目录:</td>
+                                 <td>
+                                     <input class="form-control" type="text" id="dest_dir" name="dest_dir">
+                                 </td>
+                            </tr>
+                            <tr>
+                              <td colspan="2">
+                                <button id="upload_file_btn" class="btn btn-primary btn-block">确认执行</button>
+                              </td>
+                            </tr>
+                        </table>
+                    </form>
+                    </div>
+
+
 
                    </div>
 
@@ -203,7 +262,39 @@
    </div>
 <!-- popup box end   --> 
 
+<!-- popup box start -->
+    <div class="modal fade" id="upload_file_to_master_window" tabindex="-1" role="dialog" aria-labelledby="myModalLabel1" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title" id="myModalLabel1">UPLOAD FILE TO MASTER</h6>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          </div>
+          <div class="modal-body">
+          <input name="files" id="files" type="file" />
+            <script>
+                function onSuccess(e) {
+                    load_files_list()
+                }
 
+                $(document).ready(function() {
+                    $("#files").kendoUpload({
+                        async: {
+                            saveUrl: "/jobapp/upload/",
+                            //removeUrl: "remove",
+                            autoUpload: true
+                        },
+                        success: onSuccess
+                    });
+                });
+            </script>
+          </div>
+          <div class="modal-footer">
+          </div>
+        </div>
+      </div>
+   </div>
+<!-- popup box end   --> 
 
 
   <script type="text/javascript">
@@ -276,6 +367,14 @@
               $('#job_exec_tip_inter').html("<font color='red'><strong>请输入执行命令！</strong></font>")
               return false
            }
+      })
+
+      $("#upload_file_btn").click(function(){
+          dest_dir = $("#dest_dir").val()
+          if (dest_dir == "") {
+             $('#job_exec_tip_inter').html("<font color='red'><strong> 请输入目标目录！</strong></font>")
+             return false
+          }
       })
 
     })
