@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+    <title>运维工具集</title>
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<script src="js/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<script src="js/ufo.js"></script>
+</head>
+<body>
+
+
+<div class="container">
+  <h2><font color="red">现在接入的是UFO UAT测试环境!!!</font></h2>
+  <ul class="nav nav-tabs">
+    <li class="active"><a data-toggle="tab" href="#UFOBank">UFO启用禁用银行</a></li>
+    <li><a data-toggle="tab" href="#UFOHandleHis">操作历史记录</a></li>
+  </ul>
+
+  <div class="tab-content">
+
+    <div id="UFOHandleHis" class="tab-pane fade" style="margin-top:20px;">
+	  <div class="container" >
+	<div class="row clearfix">
+		<div class="col-md-10 column" style="margin-top:20px;">
+		<table id="BankExecHisTable" class="table table-condensed table-striped table-bordered">
+				<thead>
+					<tr class="success">
+						<th>
+							序号
+						</th>
+						<th>
+							执行时间
+						</th>					
+						<th>
+							动作
+						</th>
+						<th>
+							操作内容
+						</th>
+						<th>
+							返回代码
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+		</div>
+		<div class="col-md-1 column">
+		</div>
+		<div class="col-md-1 column" style="margin-top:65px;">
+
+		</div>
+
+	</div>
+</div>
+    </div>
+
+    <div id="UFOBank" class="tab-pane fade in active">
+
+	  <div class="container" >
+	<div class="row clearfix">
+		<div class="col-md-10 column" style="margin-top:20px;">
+		      <form role="form">
+                 <div class="checkbox">
+                   <input id="启用" type="radio" name="action" value="enableBankCard" />启用(启用所有银行业务,不必在下面选择银行及业务)
+                 </div>
+                 <div class="checkbox">
+                   <input id="禁用" type="radio" name="action" value="disableBankCard" checked />禁用(禁用银行业务,在下面选择需禁用的银行及业务)
+                 </div>
+               </form>
+			<table id="BankInfoTable" class="table table-condensed table-striped table-bordered">
+				<thead>
+					<tr class="success">
+						<th>
+							序号
+						</th>
+						<th>
+							代号
+						</th>					
+						<th>
+							银行
+						</th>
+						<th>
+							中金快捷交易
+						</th>
+						<th>
+							中金代扣交易
+						</th>
+						<th>
+						    所有交易通道(含中金,金运通)
+						</th>
+					    <th class="info">
+							中金快捷绑卡
+						</th>
+						<th class="info">
+							中金代扣绑卡
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+				<tfoot>
+				  <tr>
+				  <td colspan="8">
+				      <button id="AllSelect" type="button" class="btn btn-default">全选</button>
+				      <button id="RevSelect" type="button" class="btn btn-default">反选</button>
+				  </td>
+				  </tr>
+            </tfoot>   
+			</table>
+
+            <!-- START -->
+            <button id="ConfirmInfoBtn" class="btn btn-primary btn-block" data-toggle="modal" data-target="#myModal">确认</button>
+<!-- 模态框（Modal） -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title" id="myModalLabel">
+					信息确认
+				</h4>
+			</div>
+			<div class="modal-body" id="ShowInfoDiv">
+				<pre></pre>
+				<p id="ActionStr" class="hidden"></p>
+				<p id="HandleStr" class="hidden"></p>
+				<p id="HandleDesrcStr" class="hidden"></p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" data-dismiss="modal">取消
+				</button>
+				<button type="button" class="btn btn-primary" id="ExecBtn">
+					提交更改
+				</button>
+			</div>
+		</div><!-- /.modal-content -->
+	</div><!-- /.modal -->
+</div>
+         <!-- END   -->
+
+		</div>
+		<div class="col-md-1 column">
+		</div>
+		<div class="col-md-1 column" style="margin-top:65px;">
+		</div>
+
+	</div>
+</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
