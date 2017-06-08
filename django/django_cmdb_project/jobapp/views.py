@@ -153,12 +153,13 @@ def get_jid_info(jid):
 @login_required
 def index(request):    
     resp_info = {}
-    resp_info['recent_all_jobs_nums'] = get_recent_all_jobs_nums()
-    resp_info['recent_success_tasks_nums'] = get_recent_success_tasks_nums()
-    resp_info['recent_failure_tasks_nums'] = get_recent_failure_tasks_nums()
+    #resp_info['recent_all_jobs_nums'] = get_recent_all_jobs_nums()
+    #resp_info['recent_success_tasks_nums'] = get_recent_success_tasks_nums()
+    #resp_info['recent_failure_tasks_nums'] = get_recent_failure_tasks_nums()
     resp_info['recent_failure_tasks_info'] = get_recent_failure_tasks_info(10)
     resp_info['recent_succss_tasks_info'] = get_recent_succss_tasks_info(10)
-    resp_info['running_jobs_nums'],resp_info['running_jobs_info'] = get_running_jobs_info()
+    #resp_info['running_jobs_nums'],resp_info['running_jobs_info'] = get_running_jobs_info()
+    resp_info['last_days'] = get_keep_jobs_time()
 
     return render(request,'jobapp/index.html',resp_info)
 
