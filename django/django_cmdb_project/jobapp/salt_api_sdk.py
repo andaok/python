@@ -15,7 +15,7 @@ import salt.runner
 def get_keep_jobs_time():
     master_opts = salt.config.client_config('/etc/salt/master')
     keep_jobs_hours = master_opts['keep_jobs']
-    return keep_jobs_hours
+    return keep_jobs_hours/24
 
 
 

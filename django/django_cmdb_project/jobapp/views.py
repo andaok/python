@@ -13,7 +13,7 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 
-from jobapp.models import DynamicGroup , SaltGroup
+from jobapp.models import DynamicGroup , SaltGroup , action_audit
 
 import os
 import json
@@ -135,6 +135,19 @@ def job_host_task_info(host,jid):
     sql = "select full_ret from salt_returns where jid='%s' and id='%s'"%(jid,host)
     _, Records_tuple = execute_sql(sql)
     return json.loads(Records_tuple[0][0])
+
+
+def write_audit_info(jid,user):
+    audit_info_obj = action_audit(jid=jid,user=user)
+    audit_info_obj.save()
+
+
+
+def get_jid_info(jid):
+    sql = "select * from jids where jid='%s'"%jid
+    Records_num, Records_tuple = execute_sql(sql)
+    if Records_num != 0 and Records_num != None:
+        return Records_tuple
 
 
 @login_required
@@ -282,6 +295,7 @@ def get_failure_task_detail_info(request):
 
 @login_required
 def state_sls_job_execute(request):
+    user = request.user
     target_hosts = request.POST['show_target_hosts']
     action = request.POST['state_sls_select']
     is_test = request.POST.get('state_sls_is_test')
@@ -295,6 +309,8 @@ def state_sls_job_execute(request):
     else:
         # test execute job
         jid =  state_sls_job_execute_test(target_hosts_list,action)
+
+    write_audit_info(jid,user)
 
     return render(request,'jobapp/exec_result_show.html',{"target_hosts_list":target_hosts_list,"target_hosts_num":target_hosts_num,"jid":jid,"is_test":is_test})
 
@@ -561,7 +577,7 @@ def salt_group_hosts_info(request):
 
 @login_required
 def cmd_run_job_execute(request):
-    
+    user = request.user
     target_hosts = request.POST['show_target_hosts']
     cmd = request.POST['cmd_run_str']
     is_test = request.POST.get('cmd_run_is_test')
@@ -576,7 +592,8 @@ def cmd_run_job_execute(request):
         # test execute job
         jid = cmd_run_job_execute_test(target_hosts_list,cmd)
 
-    
+    write_audit_info(jid,user)
+
     return render(request,'jobapp/cmdrun_exec_result_show.html',{"target_hosts":target_hosts,"target_hosts_num":target_hosts_num,"jid":jid,"is_test":is_test})
 
 
@@ -599,6 +616,8 @@ def upload_file_job_execute(request):
     source_file_size = os.path.getsize(source_file_path)/1024/1024
 
     jid = upload_file(target_hosts_list,user,source_file_name,dest_file_path)
+
+    write_audit_info(jid,user)
     
     return render(request,'jobapp/upload_exec_result_show.html',{"target_hosts_list":target_hosts_list,"target_hosts_num":target_hosts_num,"jid":jid,"source_file_name":source_file_name,"dest_file_path":dest_file_path,"source_file_size":source_file_size})
 
@@ -640,6 +659,25 @@ def user_dir_files_list(request):
 
 
 
+@login_required
+def audit(request):
+    actions_obj = action_audit.objects.order_by("-id")
+    action_info_list = []
+    for  action_obj in actions_obj:
+        jid = action_obj.jid
+        user = action_obj.user
+        action_detail_info = json.loads(get_jid_info(jid)[0][1])
+        tgt = action_detail_info['tgt']
+        fun = action_detail_info['fun']
+        arg = action_detail_info['arg']
+
+        action_info = {"jid":jid,"user":user,"tgt":tgt,"fun":fun,"arg":arg}
+        action_info_list.append(action_info)
+
+    last_days = get_keep_jobs_time()
+    return render(request,'jobapp/audit.html',{"action_info_list":action_info_list,"last_days":last_days})           
+
+
 
 # ----------------------
 # FOR DEBUG
@@ -653,6 +691,7 @@ if __name__ == "__main__":
     # print get_recent_success_tasks_nums()
     #get_failure_task_detail_info_test("20170518140245899698","W612-JENKDOCK-3")
     #print get_job_host_task_status("W612-JENKDOCK-4","20170523140452702260")
+    print json.loads(get_jid_info("20170608112713263763")[0][1])['arg']
     pass
 
 
