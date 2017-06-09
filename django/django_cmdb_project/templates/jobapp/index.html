@@ -7,10 +7,9 @@
 
 {% block main_block%}
    
-    <div style="margin-top:15px;"><h6 style="color: rgb(0, 132, 228)">Running Jobs (Last {{last_days}} Days)</h6></div>
-
+    <div style="margin-top:15px;"><h6 style="color: rgb(0, 132, 228)">Success Tasks (Last {{last_days}} Days)</h6></div>
     <div class="table-responsive">
-        <table class="table table-striped table-condensed">
+        <table class="table table-striped">
             <thead>
                 <tr>
                     <td>ID</td>
@@ -22,24 +21,25 @@
                     <td>DETAIL</td>
                 </tr>
             </thead>
-            <tbody id="id_running_jobs_table">
-            
-            {% for key,value in running_jobs_info.items %}
+            <tbody>
+
+            {% for item in recent_succss_tasks_info %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ key }}</td>
-                    <td>{{ value.StartTime }}</td>
-                    <td>{{ value.Target }}</td>
-                    <td>{{ value.Function }}</td>
-                    <td>{{ value.Arguments }}</td>
-                    <td><button class="btn btn-outline-success my-2 my-sm-0" type="submit">Detail</button></td>
+                    <td>{{ item.1 }}</td>
+                    <td>{{ item.3 }}</td>
+                    <td>{{ item.2 }}</td>
+                    <td>{{ item.0 }}</td>
+                    <td>See Detail</td>
+                    <td>
+                        <a class="btn btn-outline-success my-2 my-sm-0"  role="button" id="{{ item.1 }}_{{ item.2 }}" name="failure_task_detail_btn" href="#failure_task_detail_info" data-toggle="modal">Detail</a>
+                    </td>
                 </tr>
             {% endfor %}
-           
+
             </tbody>
         </table>
     </div>
-
     
     <h6 style="color: rgb(0, 132, 228)">Failure Tasks (Last {{last_days}} Days)</h6>
     <div class="table-responsive">
@@ -55,7 +55,7 @@
                     <td>DETAIL</td>
                 </tr>
             </thead>
-            <tbody id="id_recent_failure_jobs_table">
+            <tbody>
 
             {% for item in recent_failure_tasks_info %}
                 <tr>

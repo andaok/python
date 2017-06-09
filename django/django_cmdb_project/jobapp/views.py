@@ -80,14 +80,15 @@ def get_recent_failure_tasks_nums():
 
 
 def get_recent_succss_tasks_info(num=10):
-    sql = 'select fun,jid,id from salt_returns where success=1 order by jid desc limit 0,%s'%num
+    sql = 'select fun,jid,id,alter_time from salt_returns where success=1 and fun="%s" or fun="%s" or fun="%s" order by jid desc limit 0,%s'%("cmd.run","state.sls","cp.get_file",num)
     recent_success_tasks_nums,recent_success_tasks_records_tuple =  execute_sql(sql)
-    recent_success_tasks_records = {}
-    if recent_success_tasks_nums != 0:    
-        for i in range(recent_success_tasks_nums):
-            recent_success_tasks_records[i+1] = recent_success_tasks_records_tuple[i]
+    # recent_success_tasks_records = {}
+    # if recent_success_tasks_nums != 0:    
+    #     for i in range(recent_success_tasks_nums):
+    #         recent_success_tasks_records[i+1] = recent_success_tasks_records_tuple[i]
 
-    return recent_success_tasks_records
+    # return recent_success_tasks_records
+    return recent_success_tasks_records_tuple
 
 
 
@@ -581,7 +582,7 @@ def cmd_run_job_execute(request):
     user = request.user
     target_hosts = request.POST['show_target_hosts']
     cmd = request.POST['cmd_run_str']
-    is_test = request.POST.get('cmd_run_is_test')
+    is_test = None
 
     target_hosts_list = target_hosts.split(",")
     target_hosts_num = len(target_hosts_list)
