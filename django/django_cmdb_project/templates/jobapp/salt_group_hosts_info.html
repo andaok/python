@@ -375,9 +375,15 @@
 
 
       $("#cmd_run_btn").click(function(){
-           var cmd_run_str = $("#cmd_run_str").val()
+           var cmd_run_str = $("#cmd_run_str").val().replace(/[\r\n]/g,"")
            if (cmd_run_str == "") {
               $('#job_exec_tip_inter').html("<font color='red'><strong>请输入执行命令！</strong></font>")
+              return false
+           }
+
+           var ret = /^.*rm.*$/
+           if (ret.test(cmd_run_str)) {
+              $('#job_exec_tip_inter').html("<font color='red'><strong>含有禁用命令，不能执行！</strong></font>")
               return false
            }
       })

@@ -582,6 +582,8 @@ def cmd_run_job_execute(request):
     user = request.user
     target_hosts = request.POST['show_target_hosts']
     cmd = request.POST['cmd_run_str']
+    cmd = cmd.replace("\r\n"," ")
+    
     is_test = None
 
     target_hosts_list = target_hosts.split(",")
