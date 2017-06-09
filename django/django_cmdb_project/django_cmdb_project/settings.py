@@ -34,6 +34,36 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
+# Ldap Config
+
+import ldap
+from django_auth_ldap.config import LDAPSearch, PosixGroupType
+
+AUTHENTICATION_BACKENDS = (
+    'django_auth_ldap.backend.LDAPBackend',  
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+
+base_dn = 'ou=People,dc=quark,dc=com'
+AUTH_LDAP_SERVER_URI = 'ldap://172.16.250.49:389'
+#AUTH_LDAP_BIND_DN = 'cn=Manager,dc=quark,dc=com' 
+#AUTH_LDAP_BIND_PASSWORD = 'P4ssw0rd'
+AUTH_LDAP_USER_SEARCH = LDAPSearch(base_dn, ldap.SCOPE_SUBTREE, "(uid=%(user)s)")
+
+AUTH_LDAP_USER_ATTR_MAP = { 
+    "username": "uid",
+    "name": "cn",
+    "email": "mail"
+}
+
+AUTH_LDAP_MIRROR_GROUPS = True
+AUTH_LDAP_ALWAYS_UPDATE_USER = True
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch('ou=Group,dc=quark,dc=com', ldap.SCOPE_SUBTREE, "(objectClass=posixGroup)")
+AUTH_LDAP_GROUP_TYPE = PosixGroupType(name_attr="cn")
+AUTH_LDAP_REQUIRE_GROUP = 'cn=op,ou=Group,dc=quark,dc=com'
+
+
 # Application definition
 
 INSTALLED_APPS = [
