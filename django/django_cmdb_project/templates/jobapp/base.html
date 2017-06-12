@@ -48,7 +48,7 @@
       <div class="collapse navbar-collapse" id="navbarsExampleDefault">
 	  
         <ul class="navbar-nav mr-auto">
-            <p><font color="#FF0000">作业控制 (demo) V1.0</font></p>
+            <p><font color="#FF0000">作业系统 V1.0</font></p>
         </ul>
 		
         <div class="form-inline mt-2 mt-md-0">
@@ -231,11 +231,18 @@
 
                     $("#get").click(function() {
 
+
                         var app = applications.value() + "_" +  applications.text()
                         var set = sets.value() + "_" + sets.text()
                         var module = modules.value() + "_" + modules.text()
 
-                        location.href = "/jobapp/target_hosts_info?app="+app+"&"+"set="+set+"&"+"module="+module
+                        if (app == "_" || set == "_" || module == "_") {
+                            $("#cmdb_tip_info").html("<font color='red'>请选择分组！</font>")
+                            return false
+                        } else {
+                            $("#cmdb_tip_info").html("<font color='green'>正在检测所选主机连通性...,请等待！</font>")
+                            location.href = "/jobapp/target_hosts_info?app="+app+"&"+"set="+set+"&"+"module="+module
+                        }
 
 
                     });
@@ -247,6 +254,7 @@
 
           </div>
           <div class="modal-footer">
+            <div id="cmdb_tip_info" align="left"></div>
             <button type="button" class="btn btn-primary" data-dismiss="modal">取消</button>
             <button type="button" class="btn btn-primary" id="get">确认</button>
           </div>
@@ -637,6 +645,7 @@
                     var dynamic_group_data = $("#dynamic_group").data("kendoDropDownList")
 
                     $("#dynamic_group_select_btn").click(function(){
+                        $("#dynamic_tip_info").html("<font color='green'>正在检测所选主机连通性...,请等待！</font>")
                         var GroupName = dynamic_group_data.text()
                         var GroupID = dynamic_group_data.value()
                         location.href = "/jobapp/dynamic_group_hosts_info?GroupName="+GroupName+"&"+"GroupID="+GroupID
@@ -646,6 +655,7 @@
             </script>
           </div>
           <div class="modal-footer">
+          <div id="dynamic_tip_info" align="left"></div>
           <button type="button" class="btn btn-primary" id="dynamic_group_select_btn">确认</button>
           </div>
         </div>
@@ -797,6 +807,9 @@
                     var salt_group_data = $("#salt_group").data("kendoDropDownList")
 
                     $("#salt_group_select_btn").click(function(){
+
+                        $("#salt_tip_info").html("<font color='green'>正在检测所选主机连通性...,请等待！</font>")
+
                         var GroupName = salt_group_data.text()
                         var GroupID = salt_group_data.value()
                         
@@ -804,10 +817,12 @@
                         window.location.replace("/jobapp/salt_group_hosts_info?GroupName="+GroupName+"&"+"GroupID="+GroupID)
                         
                     })
+
                 });
             </script>
           </div>
           <div class="modal-footer">
+          <div id="salt_tip_info" align="left"></div>
           <button type="button" class="btn btn-primary" id="salt_group_select_btn">确认</button>
           </div>
         </div>
