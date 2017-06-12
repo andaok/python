@@ -683,6 +683,11 @@ def audit(request):
 
 
 
+@login_required
+def help(request):
+    return render(request,'jobapp/help.html',{})
+
+
 # ----------------------
 # FOR DEBUG
 # ----------------------

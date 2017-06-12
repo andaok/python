@@ -46,7 +46,7 @@ AUTHENTICATION_BACKENDS = (
 
 
 base_dn = 'ou=People,dc=quark,dc=com'
-AUTH_LDAP_SERVER_URI = 'ldap://172.16.250.49:389'
+AUTH_LDAP_SERVER_URI = 'ldap://ldap1.quark.com:389'
 #AUTH_LDAP_BIND_DN = 'cn=Manager,dc=quark,dc=com' 
 #AUTH_LDAP_BIND_PASSWORD = 'P4ssw0rd'
 AUTH_LDAP_USER_SEARCH = LDAPSearch(base_dn, ldap.SCOPE_SUBTREE, "(uid=%(user)s)")
