@@ -88,6 +88,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'django_cmdb_project.urls'
 
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
