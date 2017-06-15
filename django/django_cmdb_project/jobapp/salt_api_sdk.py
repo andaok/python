@@ -67,6 +67,26 @@ def state_sls_job_execute_test(target_hosts_list,action):
 
 
 
+def state_sls_execute(target_hosts_list,action,is_test):
+    args = []
+    if action == "initsys":
+        args.append("initEnv.init")
+    elif action == "install_jdk17":
+        args.append("jdk17.init")
+    elif action == "install_tomcat7":
+        args.append("tomcat7.init")
+    elif action == "install_nginx":
+        args.append("tengine.init")
+    elif action == "install_zabbix":
+        args.append("zabbix.init")
+
+    if is_test != None:args.append("test=true")
+
+    local = salt.client.LocalClient()
+    jid = local.cmd_async(target_hosts_list,'state.sls',args,expr_form='list',timeout=2)
+    return jid
+
+
 
 def get_salt_group_hosts(GroupExpr):
     local = salt.client.LocalClient()

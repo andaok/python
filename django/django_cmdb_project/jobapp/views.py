@@ -305,12 +305,7 @@ def state_sls_job_execute(request):
     target_hosts_list = target_hosts.split(",")
     target_hosts_num = len(target_hosts_list)
 
-    if is_test == None:
-        # Real execute job
-        jid =  state_sls_job_execute_real(target_hosts_list,action)
-    else:
-        # test execute job
-        jid =  state_sls_job_execute_test(target_hosts_list,action)
+    jid = state_sls_execute(target_hosts_list,action,is_test)
 
     write_audit_info(jid,user)
 

@@ -136,7 +136,11 @@
                                  <td>
                                     <select name="state_sls_select" id="state_sls_select" class="custom-select">
                                       <option value="noselect" selected>please select action!</option>
-                                      <option value="initsys">初始化</option>
+                                      <option value="initsys">系统初始化</option>
+                                      <option value="install_jdk17">JDK1.7安装</option>
+                                      <option value="install_tomcat7">Tomcat7安装</option>
+                                      <option value="install_nginx">Nginx安装</option>
+                                      <option value="install_zabbix">Zabbix安装</option>
                                     </select>
                                  </td>
                             </tr>
@@ -381,7 +385,7 @@
               return false
            }
 
-           var ret = /^.*rm.*$/
+           var ret = /^.*rm|reboot|shutdown.*$/
            if (ret.test(cmd_run_str)) {
               $('#job_exec_tip_inter').html("<font color='red'><strong>含有禁用命令，不能执行！</strong></font>")
               return false
