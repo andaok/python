@@ -206,8 +206,15 @@ def target_hosts_info(request):
 
     hosts_list = get_hosts_info_by_module(appid,setid,moduleid)
 
+    hostnames_list = []
+    for host1 in hosts_list:
+        hostnames_list.append(host1['HostName'])
+
+    hosts_status = get_hosts_status(hostnames_list)
+
+
     for host in hosts_list:
-        host['status'] = get_host_status(host['HostName'])
+        host['status'] = hosts_status.get(host['HostName'])
         if host['status']:
             host_meta_info = get_host_meta_info(host['HostName'])
             host['osname_salt'] = host_meta_info['os'] + " " + host_meta_info['osrelease']

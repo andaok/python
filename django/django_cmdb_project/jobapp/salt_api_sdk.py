@@ -6,6 +6,7 @@
 # @Desrc   : salt api sdk interface
 # -------------------------------- 
 
+import time
 import salt.config
 import salt.client
 import salt.runner 
@@ -44,6 +45,15 @@ def get_host_status(hostname):
         return 0
 
 
+
+
+
+def get_hosts_status(hostnames_list):
+    local = salt.client.LocalClient()
+    resp = local.cmd(hostnames_list,'test.ping',expr_form='list',timeout=2)
+    return resp
+
+
 def init_sys_env(target_hosts_list):
     local = salt.client.LocalClient()
     resp = local.cmd_async(target_hosts_list,'state.sls',['test.init_env'],expr_form='list',timeout=2)
@@ -71,14 +81,23 @@ def state_sls_execute(target_hosts_list,action,is_test):
     args = []
     if action == "initsys":
         args.append("initEnv.init")
-    elif action == "install_jdk17":
-        args.append("jdk17.init")
+    elif action == "install_jdk1760":
+        args.append("jdk1760.init")
+    elif action == "install_jdk1779":
+        args.append("jdk1779.init")
+    elif action == "install_jdk1874":
+        args.append("jdk1874.init")
+    elif action == "install_jdk18131":
+        args.append("jdk18131.init")
     elif action == "install_tomcat7":
         args.append("tomcat7.init")
+    elif action == "install_tomcat8":
+        args.append("tomcat8.init")
     elif action == "install_nginx":
         args.append("tengine.init")
     elif action == "install_zabbix":
         args.append("zabbix.init")
+
 
     if is_test != None:args.append("test=true")
 
@@ -179,5 +198,6 @@ if __name__ == "__main__":
     #init_sys_env(["W612-JENKDOCK-3","W612-JENKDOCK-4"])
     #$get_salt_group_hosts("G@os:CentOS")
     #print test1()
-    print get_file_stats("W612-JENKDOCK-3","/tmp/test.txt")
+    #print get_file_stats("W612-JENKDOCK-3","/tmp/test.txt")
+    print get_hosts_status(["Q607-SECURITY-1","W612-JENKDOCK-3","W612-JENKDOCK-4"])
     pass
