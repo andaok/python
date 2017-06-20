@@ -210,7 +210,7 @@
                                  <td>
                                       <div class="row">
                                       <div class="col-md-7">
-                                         <input id="source_file" name="source_file" style="width:100%">
+                                         <input id="source_file" name="source_file" style="width:350px">
                                       </div>
                                       <div class="col-md-5">
                                       <a class="btn btn-outline-success my-2 my-sm-0" id="upload_file_to_master_btn" role="button" href="#upload_file_to_master_window" data-toggle="modal">上传</a>
@@ -428,8 +428,8 @@
           source_file_obj = $("#source_file").data("kendoDropDownList")
           FileName = source_file_obj.text()
           dest_dir = $("#dest_dir").val()
-          if (FileName == "") {
-              $('#job_exec_tip_inter').html("<font color='red'><strong>请先上传文件到Master,再选择其作为源文件！</strong></font>")
+          if (FileName == "" || FileName == "Please Select File...") {
+              $('#job_exec_tip_inter').html("<font color='red'><strong>请先上传文件到Master,再选择其作为源文件,如已上传，请选择！</strong></font>")
               return false
           }
           if (dest_dir == "") {
