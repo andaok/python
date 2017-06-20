@@ -35,4 +35,5 @@ urlpatterns = [
     url(r'^get_upload_file_progress/$',views.get_upload_file_progress,name="get_upload_file_progress"),
     url(r'^audit/$',views.audit,name="audit"),
     url(r'^help/$',views.help,name="help"),
+    url(r'^del_file/$',views.del_file,name="del_file"),
 ]

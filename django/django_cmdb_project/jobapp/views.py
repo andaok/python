@@ -657,11 +657,11 @@ def user_dir_files_list(request):
         os.makedirs(user_dir)
     filename_list = os.listdir(user_dir)
     files_list = []
+    files_list.append({"FileName":"Please Select File..."})
     for filename in filename_list:
         file = {"FileName":filename}
         files_list.append(file)
     return JsonResponse(files_list,safe=False)
-
 
 
 
@@ -688,6 +688,16 @@ def audit(request):
 @login_required
 def help(request):
     return render(request,'jobapp/help.html',{})
+
+
+@login_required
+def del_file(request):
+    user = request.user
+    user_dir = "/srv/salt/upload_files/%s/"%user
+    file_name = request.GET.get("file_name")
+    file_path = os.path.join(user_dir,file_name)
+    os.remove(file_path)
+    return JsonResponse({'info':'info'},safe=False)
 
 
 # ----------------------
