@@ -4,12 +4,23 @@
 from django.db import models
 # 导入User模块
 from django.contrib.auth.models import User
+
+
+"""
+write by itwye in 20170621:
+open-cmdb对于主机，主机组，项目，角色是如下设置的逻辑关系
+(1) 首先新建"项目"
+(2) 为"项目"新建"主机组"，一个项目可有多个"主机组"，"主机组"只能属于一个"项目"
+(3) 看"主机组"中有几种角色的"主机"，为"主机组"定义这些"角色"。
+(4) 为主机分配角色，一个主机可以属于多个"项目-主机组-角色"，通俗说就是，一个主机可以在多个项目下主机组扮演角色 ：）      
+"""
+
 # Create your models here.
 # 定义一个Server_Group类，从models.Model中继承，这里也就是所谓得数据表结构
 class Server_Group(models.Model):
     # 定义主机组名称字段
     name = models.CharField(u'主机组', max_length=255, unique=True)
-    # 关联的项目字段，这是关联一个外键
+    # 关联的项目字段，这是关联一个外键 (itwye:主机组只能属于一个项目)
     project = models.ForeignKey("Project", verbose_name='项目名称')
     # 备注字段
     memo = models.CharField(u'备注', max_length=255, blank=True)

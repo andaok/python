@@ -8,6 +8,11 @@ https://docs.djangoproject.com/en/1.7/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.7/ref/settings/
 """
+"""
+定义的CMDB_VERSION和CMDB_NAME,可以在网页模板里引用，如
+{{CMDB_NAME}}
+"""
+
 CMDB_VERSION = '1.0'
 CMDB_NAME = u'测试CMDB'
 
@@ -28,7 +33,7 @@ DEBUG = True
 
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -126,10 +131,30 @@ TEMPLATE_DIRS = [
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/home/'
-try:
-    LOCAL_SETTINGS
-except NameError:
-    try:
-        from local_settings import *
-    except ImportError:
-        print "Warning: import local settings."
+
+#try:
+#    LOCAL_SETTINGS
+#except NameError:
+#    try:
+#        from local_settings import *
+#    except ImportError:
+#        print "Warning: import local settings."
+
+
+
+#LOCAL_SETTINGS = True
+#from base.settings import *
+
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
+DATABASES.update({
+    'default': {
+        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': 'opencmdb',                      # Or path to database file if using sqlite3.
+        'USER': 'opencmdb',                     # Not used with sqlite3.
+        'PASSWORD': 'opencmdb',                  # Not used with sqlite3.
+        'HOST': '127.0.0.1',                      # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '3306',                      # Set to empty string for default. Not used with sqlite3.
+        'OPTIONS':{'charset': 'utf8', }
+    },
+})

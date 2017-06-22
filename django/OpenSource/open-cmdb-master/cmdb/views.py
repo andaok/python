@@ -51,8 +51,12 @@ def show_all(request, model):
         # 注意在model的字段注释要写，这样得话，表名的中文字段就可以直接从models中读取
         table_field = get_data_from_model(model_name)
 
+        print("table_field is %s"%table_field)
+
         # 得到数据
         model_data = model_name.objects.all()
+
+        print("model_data is %s"%model_data)
 
         # 得到条数
         total_num = model_data.count()
@@ -95,7 +99,8 @@ def show_all(request, model):
             total_num = search_data.count()
             for s_data in search_data:
                 result.append(get_data_from_model(model_name, s_data))
-
+    
+    print("result is %s"%result)
     return render_to_response('all_data_show.html', locals(), context_instance=RequestContext(request))  # 删除数据函数
 
 
