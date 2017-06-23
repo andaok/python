@@ -51,12 +51,12 @@ def show_all(request, model):
         # 注意在model的字段注释要写，这样得话，表名的中文字段就可以直接从models中读取
         table_field = get_data_from_model(model_name)
 
-        print("table_field is %s"%table_field)
+        #print("table_field is %s"%table_field)
 
         # 得到数据
         model_data = model_name.objects.all()
 
-        print("model_data is %s"%model_data)
+        #print("model_data is %s"%model_data)
 
         # 得到条数
         total_num = model_data.count()
@@ -100,7 +100,8 @@ def show_all(request, model):
             for s_data in search_data:
                 result.append(get_data_from_model(model_name, s_data))
     
-    print("result is %s"%result)
+    #print("result is %s"%result)
+    #print("locals is %s"%locals())
     return render_to_response('all_data_show.html', locals(), context_instance=RequestContext(request))  # 删除数据函数
 
 
@@ -139,10 +140,14 @@ def add_modify(request, model, id):
     if request.method == 'POST':
         instance = model_name.objects.get(id=id) if id > 0 else None
         form_data = form(request.POST, instance=instance)
+        print("form_data is %s"%form_data)
+        print("form_data error pre  is %s"%form_data.errors)
         if form_data.is_valid():
             form_data.save()
             return HttpResponse(json.dumps({"result": True}))
         else:
+            print("form_data error type is %s"%type(form_data.errors))
+            print("form_data error after is %s"%form_data.errors)
             return HttpResponse(json.dumps({"result": False,
                                             "errors": form_data.errors}))
 
@@ -184,6 +189,8 @@ def _edit_show(request, model, id):
     # 设置manytomany, 如果get_edit_context中有, 则取出并覆盖初始值:
     manytomany_keys = model_utils.get_manytomanys_edit_context(model_name, model_obj)
 
+
+    #print("locals is %s"%locals())
     return render_to_response('add_modify.html', locals(),
                               context_instance=RequestContext(request))
 

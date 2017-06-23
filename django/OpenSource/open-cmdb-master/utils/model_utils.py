@@ -33,15 +33,15 @@ def get_data_from_model(model, obj=None):
 
     opts = model._meta  # 取model得Meta属性集合
 
-    print("# ------- for debug----------")
-    print("model is %s,opts is %s"%(model,opts))
-    print("model type is %s,opts type is %s"%(type(model),type(opts)))
-    print("opts.fields is %s"%opts.fields)
-    print("opts.many_to_many is %s"%opts.many_to_many)
-    print("# ------ debug end-----------")
+    #print("# ------- for debug----------")
+    #print("model is %s,opts is %s"%(model,opts))
+    #print("model type is %s,opts type is %s"%(type(model),type(opts)))
+    #print("opts.fields is %s"%opts.fields)
+    #print("opts.many_to_many is %s"%opts.many_to_many)
+    #print("# ------ debug end-----------")
 
     for f in opts.fields + opts.many_to_many:
-        print("f type is %s"%type(f))
+        #print("f type is %s"%type(f))
         name = getattr(f, 'name')
         help_text = getattr(f, 'help_text')
         no_blank = not getattr(f, 'blank', False)
@@ -126,6 +126,7 @@ def get_foreignkeys_edit_context(model_name, model_obj=None):
 
     opts = model_name._meta
     for f in opts.fields:
+        #print("field obj is %s"%f.__dict__)
         name = getattr(f, 'name')
         try:
             if hasattr(f, 'choices') and getattr(f, 'choices'):
@@ -133,6 +134,7 @@ def get_foreignkeys_edit_context(model_name, model_obj=None):
 
             if type(f) in [ForeignKey, OneToOneField]:
                 rel_model = f.rel.to
+                print("rel_model is %s"%dir(rel_model))
 
                 limit_choices_to = getattr(f.rel, 'limit_choices_to', None)
 
@@ -172,7 +174,7 @@ def get_foreignkeys_edit_context(model_name, model_obj=None):
                 foreignkeys_mchoices_keys[name] = keynames
         except Exception, e:
             raise
-
+    print("foreignkeys_mchoices_keys is %s"%foreignkeys_mchoices_keys)
     return foreignkeys_mchoices_keys
 
 

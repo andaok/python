@@ -1,6 +1,9 @@
 {% extends 'base/base.html' %}
 {% load cmdb_tags %}
 {% block content %}
+    <!-- FOR DEBUG  -->
+    <p color="red">{% widthratio 100 list_display|length 1 %}</p>
+    <!-- -->
     <div class="fuelux">
         <div class="fu-example section">
             <div class="repeater" data-staticheight="400" id="myRepeater" data-currentview="list" data-viewtype="list">

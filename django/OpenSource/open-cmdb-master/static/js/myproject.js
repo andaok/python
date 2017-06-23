@@ -226,6 +226,17 @@ function delete_one_data(model, id){
     });
 }
 
+// ------------- add by itwye ------------
+function alertObj(obj){
+	var output = "";
+	for(var i in obj){  
+		var property=obj[i];  
+		output+=i+" = "+property+"\n"; 
+	}  
+	alert(output);
+}
+// ---------------------------------------
+
 
 function clean_error_msg(form){
     form.find(".form-group").removeClass("has-error")
@@ -233,6 +244,7 @@ function clean_error_msg(form){
 }
 
 function show_error_msg(form, errors){
+    alertObj(errors)
     $.each(errors, function(field, errors){
         var err_group = $("[name=" +field+ "]").parents(".form-group")
         err_group.addClass("has-error")
