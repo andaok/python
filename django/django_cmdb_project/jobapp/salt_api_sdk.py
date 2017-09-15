@@ -6,7 +6,6 @@
 # @Desrc   : salt api sdk interface
 # -------------------------------- 
 
-import time
 import salt.config
 import salt.client
 import salt.runner 
@@ -45,9 +44,6 @@ def get_host_status(hostname):
         return 0
 
 
-
-
-
 def get_hosts_status(hostnames_list):
     local = salt.client.LocalClient()
     resp = local.cmd(hostnames_list,'test.ping',expr_form='list',timeout=2)
@@ -64,7 +60,7 @@ def init_sys_env(target_hosts_list):
 def state_sls_job_execute_real(target_hosts_list,action):
     local = salt.client.LocalClient()
     if action == "initsys":
-        jid = local.cmd_async(target_hosts_list,'state.sls',['initEnv.init'],expr_form='list',timeout=2)
+        jid = local.cmd_async(target_hosts_list,'state.sls',['test.init_env'],expr_form='list',timeout=2)
     return jid
 
 
@@ -72,13 +68,14 @@ def state_sls_job_execute_real(target_hosts_list,action):
 def state_sls_job_execute_test(target_hosts_list,action):
     local = salt.client.LocalClient()
     if action == "initsys":
-        jid = local.cmd_async(target_hosts_list,'state.sls',['initEnv.init','test=true'],expr_form='list',timeout=2)
+        jid = local.cmd_async(target_hosts_list,'state.sls',['test.init_env','test=true'],expr_form='list',timeout=2)
     return jid
 
 
 
 def state_sls_execute(target_hosts_list,action,is_test):
     args = []
+
     if action == "initsys":
         args.append("initEnv.init")
     elif action == "install_jdk1760":
@@ -97,7 +94,10 @@ def state_sls_execute(target_hosts_list,action,is_test):
         args.append("tengine.init")
     elif action == "install_zabbix":
         args.append("zabbix.init")
-
+    elif action == "install_redis":
+        args.append("redis.init")
+    elif action == "upgrade_ssh":
+        args.append("openssl.init")
 
     if is_test != None:args.append("test=true")
 
@@ -111,7 +111,6 @@ def get_salt_group_hosts(GroupExpr):
     local = salt.client.LocalClient()
     resp = local.cmd(GroupExpr,'grains.items',expr_form='compound',timeout=2)
     return resp
-
 
 
 
@@ -196,8 +195,7 @@ if __name__ == "__main__":
     #print get_host_meta_info("W612-JENKDOCK-3")
     #print get_host_status("BGP-NETAM-01")
     #init_sys_env(["W612-JENKDOCK-3","W612-JENKDOCK-4"])
-    #$get_salt_group_hosts("G@os:CentOS")
+    #print get_salt_group_hosts("S@172.16.4.136")
     #print test1()
     #print get_file_stats("W612-JENKDOCK-3","/tmp/test.txt")
-    print get_hosts_status(["Q607-SECURITY-1","W612-JENKDOCK-3","W612-JENKDOCK-4"])
     pass

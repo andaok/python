@@ -149,6 +149,8 @@ def get_jid_info(jid):
     Records_num, Records_tuple = execute_sql(sql)
     if Records_num != 0 and Records_num != None:
         return Records_tuple
+    else:
+        return None
 
 
 @login_required
@@ -206,16 +208,17 @@ def target_hosts_info(request):
 
     hosts_list = get_hosts_info_by_module(appid,setid,moduleid)
 
+    # -------------
     hostnames_list = []
     for host1 in hosts_list:
         hostnames_list.append(host1['HostName'])
 
     hosts_status = get_hosts_status(hostnames_list)
-
+    # -------------
 
     for host in hosts_list:
         host['status'] = hosts_status.get(host['HostName'])
-        if host['status']:
+        if host.get('status'):
             host_meta_info = get_host_meta_info(host['HostName'])
             host['osname_salt'] = host_meta_info['os'] + " " + host_meta_info['osrelease']
             host['ip_salt'] = '|'.join(host_meta_info['ipv4'])
@@ -665,6 +668,7 @@ def user_dir_files_list(request):
 
 
 
+
 @login_required
 def audit(request):
     actions_obj = action_audit.objects.order_by("-id")
@@ -672,13 +676,17 @@ def audit(request):
     for  action_obj in actions_obj:
         jid = action_obj.jid
         user = action_obj.user
-        action_detail_info = json.loads(get_jid_info(jid)[0][1])
-        tgt = action_detail_info['tgt']
-        fun = action_detail_info['fun']
-        arg = action_detail_info['arg']
+        jid_info = get_jid_info(jid)
+        if jid_info:
+            action_detail_info = json.loads(jid_info[0][1])
+            tgt = action_detail_info['tgt']
+            fun = action_detail_info['fun']
+            arg = action_detail_info['arg']
 
-        action_info = {"jid":jid,"user":user,"tgt":tgt,"fun":fun,"arg":arg}
-        action_info_list.append(action_info)
+            action_info = {"jid":jid,"user":user,"tgt":tgt,"fun":fun,"arg":arg}
+            action_info_list.append(action_info)
+        else:
+            continue
 
     last_days = get_keep_jobs_time()
     return render(request,'jobapp/audit.html',{"action_info_list":action_info_list,"last_days":last_days})           
@@ -698,6 +706,30 @@ def del_file(request):
     file_path = os.path.join(user_dir,file_name)
     os.remove(file_path)
     return JsonResponse({'info':'info'},safe=False)
+
+
+@login_required
+def shortcut_search_host(request):
+    keyWord = request.GET.get("keyWord")
+    type = request.GET.get("type")
+    
+    if type == "ip":group_expr = "S@"+keyWord
+    if type == "hostname":group_expr = "G@nodename:"+keyWord
+ 
+    resp = get_salt_group_hosts(group_expr)
+
+    hosts_list = []
+
+    for hostname , host_obj in resp.iteritems():
+        host = {}
+        host["HostName"] = hostname
+        host["status"] = 1
+        host['osname_salt'] = host_obj['os'] + " " + host_obj['osrelease']
+        host['ip_salt'] = '|'.join(host_obj['ipv4'])
+        hosts_list.append(host)
+
+    return render(request,"jobapp/salt_group_hosts_info.html",{"hosts":hosts_list,"GroupName":keyWord})
+
 
 
 # ----------------------

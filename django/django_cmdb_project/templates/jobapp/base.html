@@ -86,7 +86,7 @@
 				      <a class="nav-link active" href="#">配置管理</a>
 				   </li>
            <li class="nav-item">
-              <a class="nav-link" href="#select_target_cmdb" data-toggle="modal"> - CMDB目标选取</a>
+              <a class="nav-link" href="#select_target_cmdb" data-toggle="modal"> - CMDB目标选取</a> 
            </li>
            <li class="nav-item">
               <a class="nav-link" href="#select_target_salt" data-toggle="modal"> - SALT分组目标选取</a>
@@ -108,13 +108,26 @@
               <a class="nav-link" href="#dynamic_group_manage" data-toggle="modal"> - 动态分组管理</a>
            </li>
         </ul>
-        <hr>
+
         <ul class="nav nav-pills flex-column">
+           <li class="nav-item">
+              <a class="nav-link active" href="#">快捷查找</a>
+           </li>
+           <li class="nav-item" style="margin-top:10px">
+              <input type="text" class="form-control" id="search_key_word" placeholder="请输入IP地址或主机名!">
+           </li>
+           <li class="nav-item" style="margin-top:10px">
+            <button type="button" class="btn" id="search_by_ip_btn">按IP地址</button>
+            <button type="button" class="btn" id="search_by_hostname_btn">按主机名</button>
+           </li>
+        </ul>
+        <hr>
+        <ul class="nav nav-pills flex-column" >
            <li class="nav-item">
               <a class="nav-link active" href="#"> 链接 </a>
            </li>
             <li class="nav-item">
-              <a class="nav-link" href="http://cmdb.quark.com" target="_blank"> - CMDB系统 </a>
+              <a class="nav-link" href="http://cmdb.quark.com" target="_blank" > - CMDB系统 </a>
            </li>
         </ul>
         <hr>
@@ -123,6 +136,7 @@
               <a class="nav-link active" href="{% url 'jobapp:help'%}"> 帮助 </a>
            </li>
         </ul>
+
 
 			{% endblock %}
         </nav>
@@ -136,6 +150,47 @@
       </div>
     </div>
 
+    <script type="text/javascript">
+    $(document).ready(function() {
+
+      function isValidIP(ip)     
+      {     
+        var reg =  /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/     
+        return reg.test(ip);     
+      }    
+
+      $("#search_by_ip_btn").click(function(){
+            var keyWord = $("#search_key_word").val()
+            if (keyWord == "") {
+               $("#search_key_word").attr('placeholder',"IP地址或主机名不得为空！")
+               return false
+            } else {
+
+              if (isValidIP(keyWord)) {
+
+                  window.location.replace("/jobapp/shortcut_search_host?keyWord="+keyWord+"&"+"type="+"ip")
+
+              } else {
+                  $("#search_key_word").val("")
+                  $("#search_key_word").attr('placeholder',"IP地址不合法！")
+                  return false
+              }
+
+            }
+      })
+
+      $("#search_by_hostname_btn").click(function(){
+            var keyWord = $("#search_key_word").val()
+            if (keyWord == "") {
+               $("#search_key_word").attr('placeholder',"IP地址或主机名不得为空！")
+               return false
+            } else {
+               window.location.replace("/jobapp/shortcut_search_host?keyWord="+keyWord+"&"+"type="+"hostname")
+            }
+      })
+
+    })
+    </script>
     
 
     <!-- popup box 1 start -->

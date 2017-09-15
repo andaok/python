@@ -36,4 +36,5 @@ urlpatterns = [
     url(r'^audit/$',views.audit,name="audit"),
     url(r'^help/$',views.help,name="help"),
     url(r'^del_file/$',views.del_file,name="del_file"),
+    url(r'^shortcut_search_host/$',views.shortcut_search_host,name="shortcut_search_host"),
 ]
