@@ -68,8 +68,8 @@ def get_hosts_info_by_module(app_id,set_id,module_id):
 
 if __name__ == "__main__":
 
-    #print get_app_info()
+    print get_app_info()
     #print get_set_info(6,6)
     #print get_module_info()
     #print get_module_info(10)
-    print len(get_hosts_info_by_module(2,3,33))
+    #print len(get_hosts_info_by_module(2,3,33))

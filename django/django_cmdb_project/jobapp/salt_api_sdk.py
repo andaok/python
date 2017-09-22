@@ -162,10 +162,10 @@ if __name__ == "__main__":
     # print master_opts['keep_jobs']
 
     # # salt client interface,execute salt cli cmd.
-    # import salt.client
-    # local = salt.client.LocalClient()
-    # resp = local.cmd('*','test.ping')
-    # print resp
+    import salt.client
+    local = salt.client.LocalClient()
+    resp = local.cmd('*','cmd.run',["whoami && pwd"],kwarg={'runas':'securityadmin'})
+    print resp
 
     # # execute salt cli async cmd
     # import salt.client
