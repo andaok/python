@@ -84,7 +84,7 @@ def CheckPwdNew(PwdStr):
     char_type_3 = [ chr(97+i).upper() for i in range(26)]
     char_type_4 = ["_"]
 
-    flag1,flag2,flag3,flag4 = True,True,True,True
+    flag1,flag2,flag3,flag4 = True,True,True,True  #是否计数标志,count=4 才是四种字符都包含.
 
     count = 0
 
@@ -173,25 +173,51 @@ print PageAccessNum
 # 3       5       8      13
 # 4       9      12      14
 # 10     11      15      16
-# 打印顺序为1,2,6,7,13,14,16,15,11,10,4,3
+# 5      8       9       19
+# 打印顺序为1,2,6,7,13,14,16,19,9,8,5,10,4,3
 # -------------------
+
+matrix_list = [[1,2,6,7],[3,5,8,13],[4,9,12,14],[10,11,15,16],[5,8,9,19]]
+
+def print_matrix_outing_ring(matrix_list):
+
+    start_list ,middle_lists ,end_list = matrix_list[0] ,matrix_list[1:-1] ,matrix_list[-1]
+
+    top_nums = ",".join([ str(i) for i in start_list])
+
+    bottom_nums = ",".join([ str(i) for i in end_list][::-1])
+
+    middle_right_nums  = ",".join([ str(i[-1]) for i in middle_lists])
+
+    middle_left_nums = ",".join([ str(i[0]) for i in middle_lists][::-1])
+
+    matrix_outing_ring = top_nums +","+middle_right_nums + "," + bottom_nums + "," + middle_left_nums
+
+    return matrix_outing_ring
+
+
+print print_matrix_outing_ring(matrix_list)
+
+
+# --------------------
+# 打印矩阵元素
+# 1      2      6      7
+# 3      5      8     13
+# 4      9     12     14
+# 10    11     15     16
+# 打印结果为1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+# --------------------
 
 matrix_list = [[1,2,6,7],[3,5,8,13],[4,9,12,14],[10,11,15,16]]
 
-start_list ,middle_lists ,end_list = matrix_list[0] ,matrix_list[1:-1] ,matrix_list[-1]
+matrix_list_sum = []
 
-top_nums = ",".join([ str(i) for i in start_list])
+for i in matrix_list:
+    matrix_list_sum +=i
 
-bottom_nums = ",".join([ str(i) for i in end_list][::-1])
+matrix_list_sum.sort()
 
-middle_right_nums  = ",".join([ str(i[-1]) for i in middle_lists])
-
-middle_left_nums = ",".join([ str(i[0]) for i in middle_lists][::-1])
-
-matrix_outing_ring = top_nums +","+middle_right_nums + "," + bottom_nums + "," + middle_left_nums
-
-print matrix_outing_ring
- 
+print ",".join([str(i) for i in matrix_list_sum])
 
 
 
